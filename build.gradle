@@ -37,6 +37,15 @@ sourceSets {
     gametest
 }
 
+// In a dev run SharedConstants.IS_RUNNING_IN_IDE is true, so the structure
+// template manager reads gametest templates from <cwd>/gameteststructures/
+// rather than from a resource pack. The templates are kept under devtools/
+// beside the mcfunction harness and copied into place before the run.
+var copyGameTestStructures = tasks.register("copyGameTestStructures", Copy) {
+    from "devtools/gameteststructures"
+    into "run/gameteststructures"
+}
+
 neoForge {
     version = project.neo_version
 
@@ -65,6 +74,7 @@ neoForge {
             // NeoForge 21.1 reads the `neoforge.` prefix. The Forge-era
             // `forge.enabledGameTestNamespaces` is silently ignored.
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            taskBefore copyGameTestStructures
         }
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
