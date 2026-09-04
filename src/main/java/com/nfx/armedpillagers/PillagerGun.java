@@ -1,5 +1,5 @@
 /*
- * Armed Pillagers - pillagers that carry Another Gun Mod firearms.
+ * Armed Pillagers - pillagers that carry firearms and know how to use them.
  * Copyright (C) 2026 nfx and contributors
  *
  * This program is free software: you can redistribute it and/or modify it
