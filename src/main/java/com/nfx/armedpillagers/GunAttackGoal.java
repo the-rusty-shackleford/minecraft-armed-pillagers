@@ -22,6 +22,7 @@ import com.f708.anothergunmod.registry.entity.bullet.BulletBuilder;
 import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.f708.anothergunmod.sounds.ModSounds;
 import com.f708.anothergunmod.utils.GunUtils;
+import com.nfx.armedpillagers.domain.CombatRules;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -30,7 +31,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Mth;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -160,19 +160,17 @@ public class GunAttackGoal extends Goal {
             return;
         }
         if (item.isAmmoEmpty(stack)) {
-            // Standing exposed through a reload is the whole counterplay window,
-            // so it costs a full magazine's worth of the gun's reload time
-            // rather than the per-round figure a player pays.
-            reloadTicks = Mth.clamp(
-                    (int) (item.reloadTime(stack) * item.maxAmmo(stack) * ApConfig.RELOAD_MULTIPLIER.get()),
-                    10, 400);
+            // A full magazine's worth of the gun's reload time, not the per-round
+            // figure a player pays; CombatRules.reloadTicks says why.
+            reloadTicks = CombatRules.reloadTicks(
+                    item.reloadTime(stack), item.maxAmmo(stack), ApConfig.RELOAD_MULTIPLIER.get());
             ArmedPillagers.LOGGER.debug("pillager {} reloading its {} for {} ticks",
                     mob.getUUID(), gun.id(), reloadTicks);
             return;
         }
         if (inPosition && canSee) {
             fire(target, gun, item, stack);
-            cooldown = Math.max(2, item.fireRate(stack));
+            cooldown = CombatRules.fireCooldown(item.fireRate(stack));
         }
     }
 
@@ -221,7 +219,7 @@ public class GunAttackGoal extends Goal {
         Vec3 muzzle = eye.add(direction.scale(0.6));
 
         float spread = gun.spread();
-        int damage = Math.max(1, Math.round(item.rangedDamage(stack) * ApConfig.DAMAGE_MULTIPLIER.get().floatValue()));
+        int damage = CombatRules.damage(item.rangedDamage(stack), ApConfig.DAMAGE_MULTIPLIER.get().floatValue());
         ItemStack round = item.getAmmoContainer(stack).getBullet(0);
 
         for (int i = 0; i < item.bulletAmountPerShot(stack); i++) {
@@ -259,7 +257,7 @@ public class GunAttackGoal extends Goal {
         Holder<SoundEvent> far = BuiltInRegistries.SOUND_EVENT.wrapAsHolder(ModSounds.FAR_GUN_SHOT.get());
         for (ServerPlayer player : level.players()) {
             double distSqr = player.distanceToSqr(mob);
-            if (distSqr > NEAR_SOUND_RANGE * NEAR_SOUND_RANGE && distSqr <= FAR_SOUND_RANGE * FAR_SOUND_RANGE) {
+            if (CombatRules.hearsFarReport(distSqr, NEAR_SOUND_RANGE, FAR_SOUND_RANGE)) {
                 player.connection.send(new ClientboundSoundPacket(far, SoundSource.HOSTILE,
                         mob.getX(), mob.getY(), mob.getZ(), 1.0F, 1.0F, mob.getRandom().nextLong()));
             }
