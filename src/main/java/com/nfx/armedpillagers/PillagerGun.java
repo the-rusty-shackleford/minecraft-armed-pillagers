@@ -22,12 +22,14 @@ import com.f708.anothergunmod.core.AmmoContainerRecord;
 import com.f708.anothergunmod.registry.item.ModItems;
 import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.f708.anothergunmod.sounds.ModSounds;
+import com.nfx.armedpillagers.domain.WeightedChoice;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -144,24 +146,15 @@ public enum PillagerGun {
     }
 
     /**
-     * One roll across all three weapons. Rarest first so the slices stay
-     * exclusive and each config number means what it says.
+     * One roll across all three weapons, or null for a crossbow. The chances
+     * are exclusive slices laid out rarest first, so each config number means
+     * what it says; {@link WeightedChoice} owns that rule and its tests.
      */
     public static PillagerGun roll(RandomSource random) {
-        float roll = random.nextFloat();
-        float shotgun = ApConfig.SHOTGUN_CHANCE.get().floatValue();
-        float rifle = ApConfig.RIFLE_CHANCE.get().floatValue();
-        float revolver = ApConfig.REVOLVER_CHANCE.get().floatValue();
-
-        if (roll < shotgun) {
-            return SHOTGUN;
-        }
-        if (roll < shotgun + rifle) {
-            return RIFLE;
-        }
-        if (roll < shotgun + rifle + revolver) {
-            return REVOLVER;
-        }
-        return null;
+        WeightedChoice<PillagerGun> choice = WeightedChoice.of(List.of(
+                new WeightedChoice.Entry<>(SHOTGUN, ApConfig.SHOTGUN_CHANCE.get()),
+                new WeightedChoice.Entry<>(RIFLE, ApConfig.RIFLE_CHANCE.get()),
+                new WeightedChoice.Entry<>(REVOLVER, ApConfig.REVOLVER_CHANCE.get())));
+        return choice.select(random.nextFloat()).orElse(null);
     }
 }
