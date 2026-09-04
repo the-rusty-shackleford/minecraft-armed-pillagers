@@ -14,6 +14,29 @@ base {
 // Mojang ships Java 21 to end users in 1.21.1, so mods must target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+// ModDevGradle registers only the NeoForged and Mojang repositories. JUnit
+// lives on Central.
+repositories {
+    mavenCentral()
+}
+
+// Three layers, one direction of dependency:
+//
+//   domain   <--  main (adapters)  <--  gametest (a real server)
+//     ^
+//     +----  test (plain JUnit; no Minecraft on its classpath at all)
+//
+// `domain` is the pure layer: the decisions this mod makes, over plain numbers
+// and booleans. It is compiled against nothing but the JDK, so a
+// `net.minecraft` import there is a compile error rather than something a
+// reviewer has to catch. `gametest` is the only source set besides `main`
+// that receives the modding dependencies; `test` never does, which is what
+// keeps it fast and honest -- a test can only exercise what is pure.
+sourceSets {
+    domain
+    gametest
+}
+
 neoForge {
     version = project.neo_version
 
@@ -30,6 +53,19 @@ neoForge {
             server()
             programArgument '--nogui'
         }
+        // The userdev `gameTestServer` run type: boots a headless server with
+        // NeoForge's gametest framework enabled, runs every @GameTest in the
+        // enabled namespaces, and exits with the number of failed required
+        // tests -- so a red test fails the Gradle task. ModDevGradle has no
+        // helper for this type the way it has client()/server(); `type` maps
+        // straight onto the run-type key in NeoForge's userdev config.json.
+        gameTestServer {
+            type = "gameTestServer"
+            sourceSet = sourceSets.gametest
+            // NeoForge 21.1 reads the `neoforge.` prefix. The Forge-era
+            // `forge.enabledGameTestNamespaces` is silently ignored.
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        }
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             logLevel = org.slf4j.event.Level.DEBUG
@@ -38,9 +74,16 @@ neoForge {
 
     mods {
         "${mod_id}" {
+            sourceSet(sourceSets.domain)
             sourceSet(sourceSets.main)
+            // FML must see the @GameTestHolder class as part of this mod for
+            // the annotation scan to find it.
+            sourceSet(sourceSets.gametest)
         }
     }
+
+    // Deliberately not `domain` and not `test` -- see the layering comment.
+    addModdingDependenciesTo(sourceSets.gametest)
 }
 
 dependencies {
@@ -49,10 +92,35 @@ dependencies {
     // BulletBuilder) but never bundle any of it - the pack supplies the real
     // mod at runtime, and neoforge.mods.toml makes it a hard dependency.
     compileOnly files("libs/${gunmod_jar}")
+
+    implementation sourceSets.domain.output
+
+    gametestImplementation sourceSets.main.output
+    gametestImplementation sourceSets.domain.output
+
+    // Plain JUnit 5 against the pure layer only. Gradle 9 no longer injects
+    // the platform launcher, so it is declared. These exact versions are the
+    // ones already in the local Gradle cache.
+    testImplementation sourceSets.domain.output
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly    'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+    testRuntimeOnly    'org.junit.platform:junit-platform-launcher:1.9.2'
+}
+
+tasks.named('test', Test) {
+    // Gradle enables -ea for Test tasks by default; the domain layer's
+    // checkRep() methods are `assert`s and rely on it.
+    useJUnitPlatform()
+}
+
+// The shipped jar is main + domain. gametest is never shipped.
+jar {
+    from sourceSets.domain.output
 }
 
 // NeoForge dev runs scan run/mods, so the gun mod has to physically be there or
-// our hard dependency fails and the run dies before it starts.
+// our hard dependency fails and the run dies before it starts. runGameTestServer
+// matches the filter, so it is covered too.
 var copyGunModForRuns = tasks.register("copyGunModForRuns", Copy) {
     from "libs/${gunmod_jar}"
     into "run/mods"
