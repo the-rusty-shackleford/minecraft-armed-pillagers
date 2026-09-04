@@ -20,6 +20,7 @@ package com.nfx.armedpillagers;
 import com.f708.anothergunmod.core.AmmoContainer;
 import com.f708.anothergunmod.core.AmmoContainerRecord;
 import com.f708.anothergunmod.registry.item.ModItems;
+import com.nfx.armedpillagers.domain.DropRules;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -132,8 +133,7 @@ public final class PillagerArming {
 
         if (random.nextFloat() < ApConfig.AMMO_DROP_CHANCE.get()) {
             ItemStack ammo = new ItemStack(gun.ammo());
-            int count = Math.min(1 + random.nextInt(ApConfig.AMMO_DROP_MAX.get()), ammo.getMaxStackSize());
-            ammo.setCount(count);
+            ammo.setCount(DropRules.ammoCount(ApConfig.AMMO_DROP_MAX.get(), ammo.getMaxStackSize(), random::nextInt));
             event.getDrops().add(drop(level, pillager, ammo));
         }
 
@@ -144,7 +144,8 @@ public final class PillagerArming {
 
     /**
      * Vanilla batters dropped equipment down to a sliver of durability, which
-     * would make a rare gun drop worthless. Clamp the wear instead.
+     * would make a rare gun drop worthless. Clamp the wear instead; the rule is
+     * DropRules.clampedDamage, this just finds the guns among the drops.
      */
     private static void unbatterDroppedGun(LivingDropsEvent event) {
         double cap = ApConfig.MAX_DROPPED_GUN_WEAR.get();
@@ -156,18 +157,18 @@ public final class PillagerArming {
             if (PillagerGun.of(stack) == null || !stack.isDamageableItem()) {
                 continue;
             }
-            int maxWear = (int) (stack.getMaxDamage() * cap);
-            if (stack.getDamageValue() > maxWear) {
-                stack.setDamageValue(maxWear);
+            int clamped = DropRules.clampedDamage(stack.getDamageValue(), stack.getMaxDamage(), cap);
+            if (clamped != stack.getDamageValue()) {
+                stack.setDamageValue(clamped);
             }
         }
     }
 
     private static ItemStack loadedMagazine(RandomSource random) {
         ItemStack magazine = new ItemStack(ModItems.SMALL_MAGAZINE.get());
-        int min = Math.min(ApConfig.MAGAZINE_MIN_ROUNDS.get(), ApConfig.MAGAZINE_MAX_ROUNDS.get());
-        int max = Math.max(ApConfig.MAGAZINE_MIN_ROUNDS.get(), ApConfig.MAGAZINE_MAX_ROUNDS.get());
-        int rounds = Math.min(min + random.nextInt(max - min + 1), SMALL_MAGAZINE_CAPACITY);
+        int rounds = DropRules.magazineRounds(
+                ApConfig.MAGAZINE_MIN_ROUNDS.get(), ApConfig.MAGAZINE_MAX_ROUNDS.get(),
+                SMALL_MAGAZINE_CAPACITY, random::nextInt);
 
         AmmoContainerRecord record = new AmmoContainerRecord(new AmmoContainer(SMALL_MAGAZINE_CAPACITY));
         ItemStack round = new ItemStack(ModItems.SMALLBULLET.get());
