@@ -22,7 +22,9 @@ import com.f708.anothergunmod.registry.entity.bullet.BulletBuilder;
 import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.f708.anothergunmod.sounds.ModSounds;
 import com.f708.anothergunmod.utils.GunUtils;
+import com.nfx.armedpillagers.domain.Aim;
 import com.nfx.armedpillagers.domain.CombatRules;
+import com.nfx.armedpillagers.domain.Vec;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -210,13 +212,11 @@ public class GunAttackGoal extends Goal {
     }
 
     private void fire(LivingEntity target, PillagerGun gun, AbstractGunItem item, ItemStack stack) {
-        // Aim from the eyes at centre mass rather than letting BulletEntity read
-        // getLookAngle(): on a mob that is body yaw, which lags the head badly
-        // while strafing and would throw every shot wide.
-        Vec3 eye = mob.getEyePosition();
-        Vec3 aimPoint = target.position().add(0.0, target.getBbHeight() * 0.6, 0.0);
-        Vec3 direction = aimPoint.subtract(eye).normalize();
-        Vec3 muzzle = eye.add(direction.scale(0.6));
+        // Eye to centre mass, as an explicit vector: Aim says why the mob's own
+        // look angle is not used.
+        Aim aim = Aim.at(vec(mob.getEyePosition()), vec(target.position()), target.getBbHeight());
+        Vec3 direction = vec3(aim.direction());
+        Vec3 muzzle = vec3(aim.muzzle());
 
         float spread = gun.spread();
         int damage = CombatRules.damage(item.rangedDamage(stack), ApConfig.DAMAGE_MULTIPLIER.get().floatValue());
@@ -262,5 +262,14 @@ public class GunAttackGoal extends Goal {
                         mob.getX(), mob.getY(), mob.getZ(), 1.0F, 1.0F, mob.getRandom().nextLong()));
             }
         }
+    }
+
+    /** The boundary between the game's vector and the domain's. */
+    private static Vec vec(Vec3 v) {
+        return new Vec(v.x, v.y, v.z);
+    }
+
+    private static Vec3 vec3(Vec v) {
+        return new Vec3(v.x(), v.y(), v.z());
     }
 }
