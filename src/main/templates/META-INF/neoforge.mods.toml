@@ -1,0 +1,46 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="nfx"
+description='''
+Pillagers sometimes carry Another Gun Mod firearms, and know how to use them.
+
+A small fraction of pillagers spawn with a revolver, a rifle, or - much more
+rarely - a shotgun, in place of the usual crossbow. Vanilla pillager AI can only
+work a crossbow, so this mod gives armed pillagers their own ranged goal: they
+close to their weapon's range, hold line of sight, fire on the gun's own fire
+rate, and stand exposed while they reload. Machine guns, auto-guns and
+flamethrowers are deliberately never handed out.
+
+Killing one can yield the gun, loose ammunition, and a partly loaded magazine.
+Every rate and chance lives in config/armedpillagers-common.toml.
+'''
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# Hard dependency: every item, data component and projectile this mod hands a
+# pillager belongs to Another Gun Mod. AFTER so its items and config exist
+# before our spawn handler ever runs.
+[[dependencies.${mod_id}]]
+    modId="anothergunmod"
+    type="required"
+    versionRange="[1.5,)"
+    ordering="AFTER"
+    side="BOTH"

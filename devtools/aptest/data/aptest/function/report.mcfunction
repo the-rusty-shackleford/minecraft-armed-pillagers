@@ -1,0 +1,2 @@
+say APTEST_REPORT_END
+stop

@@ -1,0 +1,94 @@
+#How often a newly spawned pillager carries a gun instead of a crossbow.
+#The three rolls are exclusive slices of one number, so the totals add up:
+#at the defaults roughly one pillager in seven is armed, and the shotgun is
+#the rare one. Existing pillagers already in the world are never re-armed.
+[spawning]
+	#Chance a pillager spawns with a revolver. Six shots, 6 damage, quick.
+	# Default: 0.08
+	# Range: 0.0 ~ 1.0
+	revolverChance = 1.0
+	#Chance a pillager spawns with a rifle. Single shot, 12 damage, long reach.
+	# Default: 0.05
+	# Range: 0.0 ~ 1.0
+	rifleChance = 0.0
+	#Chance a pillager spawns with a shotgun. Five pellets, devastating up close.
+	#Deliberately the rarest of the three.
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	shotgunChance = 0.0
+	#Whether pillagers spawned as part of a raid can be armed.
+	#Set false to keep raids to crossbows and leave guns to patrols and outposts.
+	armRaidPillagers = true
+
+#How a gun-armed pillager fights. Damage, fire rate, reload time and pellet
+#count all come from Another Gun Mod's own config - these are multipliers on
+#top of it, so retuning the guns there retunes the pillagers too.
+[combat]
+	#Scales the gun's own damage when a pillager pulls the trigger.
+	#1.0 means a pillager's rifle hits exactly as hard as yours (12).
+	#Drop this if a patrol with two riflemen is more than you want to meet.
+	# Default: 1.0
+	# Range: 0.0 ~ 4.0
+	damageMultiplier = 1.0
+	#Scales shot spread. Higher is less accurate. 1.0 is already looser than a
+	#standing player, so pillagers miss more than you do at the same range.
+	# Default: 1.0
+	# Range: 0.1 ~ 8.0
+	spreadMultiplier = 1.0
+	#Scales how long a pillager stands there reloading an empty gun.
+	#That pause is the whole counterplay window - raise it to make guns fairer.
+	# Default: 1.0
+	# Range: 0.25 ~ 8.0
+	reloadMultiplier = 1.0
+	#Blocks at which a revolver pillager stops closing and starts shooting.
+	# Default: 16.0
+	# Range: 4.0 ~ 64.0
+	revolverRange = 16.0
+	#Blocks at which a rifle pillager stops closing and starts shooting.
+	# Default: 28.0
+	# Range: 4.0 ~ 64.0
+	rifleRange = 28.0
+	#Blocks at which a shotgun pillager stops closing and starts shooting.
+	#Short on purpose - it has to walk into your face to be dangerous.
+	# Default: 12.0
+	# Range: 4.0 ~ 64.0
+	shotgunRange = 12.0
+
+#What a dead armed pillager leaves behind. All of it needs the kill to be
+#credited to a player, exactly like vanilla mob equipment.
+[drops]
+	#Chance the gun itself drops. Looting raises this the same way it raises any
+	#mob's equipment drop. Vanilla equipment sits at 0.085 for comparison.
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	gunDropChance = 1.0
+	#Cap on how worn a dropped gun may be, as a fraction of its durability.
+	#Vanilla batters dropped equipment down to near zero, which would make a rare
+	#gun drop worthless; 0.6 guarantees at least 40% of the barrel left.
+	#Set 1.0 for unmodified vanilla wear.
+	# Default: 0.6
+	# Range: 0.0 ~ 1.0
+	maxDroppedGunWear = 0.6
+	#Chance to also drop loose rounds for whichever gun it carried
+	#(small bullets, big bullets or shells).
+	# Default: 0.5
+	# Range: 0.0 ~ 1.0
+	ammoDropChance = 1.0
+	#Upper bound on that ammo drop; the count is 1..this, uniformly.
+	# Default: 3
+	# Range: 1 ~ 64
+	ammoDropMax = 3
+	#Chance to drop a magazine, partly loaded with small bullets.
+	#Magazines take small bullets only, so this is always a small magazine
+	#regardless of which gun the pillager was carrying.
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	magazineDropChance = 1.0
+	#Fewest small bullets in that magazine.
+	# Default: 4
+	# Range: 0 ~ 32
+	magazineMinRounds = 4
+	#Most small bullets in that magazine. A small magazine holds 32.
+	# Default: 16
+	# Range: 0 ~ 32
+	magazineMaxRounds = 16
