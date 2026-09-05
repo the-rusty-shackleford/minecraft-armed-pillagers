@@ -1,7 +1,11 @@
 # Armed Pillagers
 
-NeoForge 1.21.1 addon to F708's **Another Gun Mod** (`anothergunmod`), built for
-the V10 pack. Hard-depends on it; does nothing without it.
+Pillagers that carry firearms and know how to use them. NeoForge 1.21.1.
+
+Works with any gun mod that speaks the [Ranged Weapons](../minecraft-ranged-weapons)
+protocol -- natively through a bridge, or from a datapack profile alone -- and
+names none of them. Out of the box it arms pillagers with F708's Another Gun
+Mod when that mod is present; a bridge for it is built from this repo.
 
 ## What it does
 
