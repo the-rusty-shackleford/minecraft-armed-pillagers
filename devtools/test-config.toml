@@ -1,21 +1,21 @@
-#How often a newly spawned pillager carries a gun instead of a crossbow.
-#The three rolls are exclusive slices of one number, so the totals add up:
-#at the defaults roughly one pillager in seven is armed, and the shotgun is
-#the rare one. Existing pillagers already in the world are never re-armed.
+#How often a newly spawned pillager carries a gun instead of a crossbow, and
+#which guns are off the table. Which gun it gets is a weighted pick from the
+#armedpillagers:pillager_loadouts data map, which any datapack can edit.
+#Existing pillagers already in the world are never re-armed.
 [spawning]
-	#Chance a pillager spawns with a revolver. Six shots, 6 damage, quick.
-	# Default: 0.08
+	#Chance a newly spawned pillager is armed at all. Which gun is then decided by
+	#the loadouts' weights: this jar ships revolver 80, rifle 50, shotgun 15, so at
+	#the default roughly one pillager in seven is armed - 8% revolver, 5% rifle,
+	#1.5% shotgun. Read live; no reload needed.
+	# Default: 0.145
 	# Range: 0.0 ~ 1.0
-	revolverChance = 1.0
-	#Chance a pillager spawns with a rifle. Single shot, 12 damage, long reach.
-	# Default: 0.05
-	# Range: 0.0 ~ 1.0
-	rifleChance = 0.0
-	#Chance a pillager spawns with a shotgun. Five pellets, devastating up close.
-	#Deliberately the rarest of the three.
-	# Default: 0.015
-	# Range: 0.0 ~ 1.0
-	shotgunChance = 0.0
+	armedChance = 1.0
+	#Weapon classes a pillager is never issued, whatever a loadout says. Sustained
+	#automatic fire from a mob that never has to reload mid-burst is not a fight, and
+	#a flamethrower sets the world alight. Classes are the protocol's open names -
+	#sidearm, rifle, shotgun, automatic, launcher, flame, unclassified, or any a gun
+	#mod mints. Takes effect on the next /reload.
+	deniedClasses = ["automatic", "flame"]
 	#Whether pillagers spawned as part of a raid can be armed.
 	#Set false to keep raids to crossbows and leave guns to patrols and outposts.
 	armRaidPillagers = true

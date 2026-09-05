@@ -179,7 +179,7 @@ public class GunAttackGoal extends Goal {
         switch (out.action()) {
             case RELOAD_FINISHED -> weapon.load(stack, weapon.capacity(stack));
             case RELOAD_STARTED -> ArmedPillagers.LOGGER.debug("pillager {} reloading its {} for {} ticks",
-                    mob.getUUID(), PillagerGun.shortName(stack.getItem()), in.reloadDuration());
+                    mob.getUUID(), ArmedPillagers.shortName(stack.getItem()), in.reloadDuration());
             case FIRE -> fire(target, weapon, stats, stack);
             case IDLE -> {
                 // Cooling, reloading, or not in position.
@@ -213,7 +213,7 @@ public class GunAttackGoal extends Goal {
         stack.hurtAndBreak(1, mob, EquipmentSlot.MAINHAND);
         playShot(level, weapon.profile(), shot.origin());
         ArmedPillagers.LOGGER.debug("pillager {} fires {} ({} x{} dmg), {} rounds left",
-                mob.getUUID(), PillagerGun.shortName(stack.getItem()), shot.count(), damage, weapon.rounds(stack));
+                mob.getUUID(), ArmedPillagers.shortName(stack.getItem()), shot.count(), damage, weapon.rounds(stack));
     }
 
     /**

@@ -17,27 +17,39 @@
  */
 package com.nfx.armedpillagers.weapon;
 
+import com.f708.anothergunmod.core.enums.WeaponType;
+import com.f708.anothergunmod.registry.item.ModItems;
+import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.nfx.rangedweapons.api.AmmoStore;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
-
-import com.f708.anothergunmod.registry.item.ModItems;
-import com.nfx.armedpillagers.PillagerGun;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Finds the {@link RangedWeapon} or {@link AmmoStore} behind an item stack.
  *
  * <p>This is the one place the consumer asks "is this a weapon, and who
- * operates it?". It answers from the {@link PillagerGun} catalog first --
- * a catalog gun is operated natively, through the gun mod's own bullets and
- * ammunition, provided the {@code rangedweapons:weapons} data map describes
- * it -- and otherwise from the protocol, whose fallback tier operates any
- * item with a profile. The precedence is the protocol's own: code that
- * knows the item beats data describing it.
+ * operates it?". Another Gun Mod's guns are answered first, natively, through
+ * the gun mod's own bullets and ammunition -- provided the
+ * {@code rangedweapons:weapons} data map describes the gun, since spread,
+ * range and sounds come from there -- and everything else is the protocol's
+ * to answer, whose fallback tier operates any item with a profile. The
+ * precedence is the protocol's own: code that knows the item beats data
+ * describing it.
+ *
+ * <p>The flamethrower is left to the protocol on purpose: its jet is not a
+ * bullet, so the gun mod's bullet builder is the wrong tool for it.
  */
 public final class PillagerWeapons {
     private PillagerWeapons() {}
+
+    // One AgmWeapon per gun item, made on first sight. Bounded by the gun
+    // mod's gun count; concurrent because a client thread may ask isWeapon()
+    // for a tooltip while the server thread fires.
+    private static final Map<AbstractGunItem, AgmWeapon> AGM_WEAPONS = new ConcurrentHashMap<>();
 
     /**
      * effects: returns the weapon behind {@code stack}, or null if the stack
@@ -48,9 +60,13 @@ public final class PillagerWeapons {
      * @return its weapon, or null
      */
     public static RangedWeapon resolve(ItemStack stack) {
-        PillagerGun gun = PillagerGun.of(stack);
-        if (gun != null && gun.profile().isPresent()) {
-            return gun.weapon();
+        if (stack.isEmpty()) {
+            return null;
+        }
+        if (stack.getItem() instanceof AbstractGunItem gun
+                && gun.weaponType() != WeaponType.FLAMETHROWER
+                && RangedWeapons.profileOf(stack).isPresent()) {
+            return AGM_WEAPONS.computeIfAbsent(gun, AgmWeapon::new);
         }
         return RangedWeapons.resolve(stack);
     }

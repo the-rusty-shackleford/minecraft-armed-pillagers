@@ -17,7 +17,10 @@
  */
 package com.nfx.armedpillagers;
 
+import com.nfx.rangedweapons.api.WeaponClass;
 import net.neoforged.neoforge.common.ModConfigSpec;
+
+import java.util.List;
 
 /**
  * Everything worth tuning without a rebuild.
@@ -29,9 +32,8 @@ public final class ApConfig {
     public static final ModConfigSpec SPEC;
 
     // spawning
-    public static final ModConfigSpec.DoubleValue REVOLVER_CHANCE;
-    public static final ModConfigSpec.DoubleValue RIFLE_CHANCE;
-    public static final ModConfigSpec.DoubleValue SHOTGUN_CHANCE;
+    public static final ModConfigSpec.DoubleValue ARMED_CHANCE;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> DENIED_CLASSES;
     public static final ModConfigSpec.BooleanValue ARM_RAID_PILLAGERS;
 
     // combat
@@ -51,24 +53,27 @@ public final class ApConfig {
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
-        builder.comment("How often a newly spawned pillager carries a gun instead of a crossbow.",
-                        "The three rolls are exclusive slices of one number, so the totals add up:",
-                        "at the defaults roughly one pillager in seven is armed, and the shotgun is",
-                        "the rare one. Existing pillagers already in the world are never re-armed.")
+        builder.comment("How often a newly spawned pillager carries a gun instead of a crossbow, and",
+                        "which guns are off the table. Which gun it gets is a weighted pick from the",
+                        "armedpillagers:pillager_loadouts data map, which any datapack can edit.",
+                        "Existing pillagers already in the world are never re-armed.")
                .push("spawning");
 
-        REVOLVER_CHANCE = builder
-                .comment("Chance a pillager spawns with a revolver. Six shots, 6 damage, quick.")
-                .defineInRange("revolverChance", 0.08D, 0.0D, 1.0D);
+        ARMED_CHANCE = builder
+                .comment("Chance a newly spawned pillager is armed at all. Which gun is then decided by",
+                        "the loadouts' weights: this jar ships revolver 80, rifle 50, shotgun 15, so at",
+                        "the default roughly one pillager in seven is armed - 8% revolver, 5% rifle,",
+                        "1.5% shotgun. Read live; no reload needed.")
+                .defineInRange("armedChance", 0.145D, 0.0D, 1.0D);
 
-        RIFLE_CHANCE = builder
-                .comment("Chance a pillager spawns with a rifle. Single shot, 12 damage, long reach.")
-                .defineInRange("rifleChance", 0.05D, 0.0D, 1.0D);
-
-        SHOTGUN_CHANCE = builder
-                .comment("Chance a pillager spawns with a shotgun. Five pellets, devastating up close.",
-                        "Deliberately the rarest of the three.")
-                .defineInRange("shotgunChance", 0.015D, 0.0D, 1.0D);
+        DENIED_CLASSES = builder
+                .comment("Weapon classes a pillager is never issued, whatever a loadout says. Sustained",
+                        "automatic fire from a mob that never has to reload mid-burst is not a fight, and",
+                        "a flamethrower sets the world alight. Classes are the protocol's open names -",
+                        "sidearm, rifle, shotgun, automatic, launcher, flame, unclassified, or any a gun",
+                        "mod mints. Takes effect on the next /reload.")
+                .defineListAllowEmpty("deniedClasses", List.of("automatic", "flame"),
+                        element -> element instanceof String name && WeaponClass.isValidName(name));
 
         ARM_RAID_PILLAGERS = builder
                 .comment("Whether pillagers spawned as part of a raid can be armed.",

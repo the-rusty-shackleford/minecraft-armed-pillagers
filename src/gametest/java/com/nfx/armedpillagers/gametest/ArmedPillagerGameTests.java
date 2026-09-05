@@ -67,9 +67,7 @@ public final class ArmedPillagerGameTests {
         // Force the roll the way devtools/test-config.toml does, but in
         // process: the config is loaded by the time any gametest runs, so
         // set() is legal here.
-        ApConfig.REVOLVER_CHANCE.set(1.0D);
-        ApConfig.RIFLE_CHANCE.set(0.0D);
-        ApConfig.SHOTGUN_CHANCE.set(0.0D);
+        ApConfig.ARMED_CHANCE.set(1.0D);
 
         // The template is an empty box. clearSpaceForStructure leaves its
         // layer 0 as air, so lay the floor the entities will stand on.

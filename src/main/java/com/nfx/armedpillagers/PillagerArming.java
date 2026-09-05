@@ -102,23 +102,48 @@ public final class PillagerArming {
     }
 
     private static void arm(Pillager pillager, CompoundTag data) {
-        PillagerGun gun = PillagerGun.roll(pillager.getRandom());
+        Item gun = LoadoutTable.current().roll(pillager.getRandom()).orElse(null);
         if (gun == null) {
             return;
         }
-        ItemStack stack = new ItemStack(gun.gun());
+        ItemStack stack = new ItemStack(gun);
         RangedWeapon weapon = PillagerWeapons.resolve(stack);
         if (weapon == null) {
-            ArmedPillagers.LOGGER.warn("catalog entry {} resolves to no weapon; pillager {} keeps its crossbow",
-                    gun.id(), pillager.getUUID());
+            // Admitted at the last reload, unmade since: a pack was removed
+            // between then and now without a reload, which cannot happen
+            // through the game's own commands. Defensive, and loud.
+            ArmedPillagers.LOGGER.warn("loadout {} resolves to no weapon any more; pillager {} keeps its crossbow",
+                    ArmedPillagers.shortName(gun), pillager.getUUID());
             return;
         }
         weapon.load(stack, weapon.capacity(stack));
 
-        ArmedPillagers.LOGGER.debug("arming pillager {} with a {}", pillager.getUUID(), gun.id());
+        ArmedPillagers.LOGGER.debug("arming pillager {} with a {}", pillager.getUUID(), ArmedPillagers.shortName(gun));
         pillager.setItemSlot(EquipmentSlot.MAINHAND, stack);
         pillager.setDropChance(EquipmentSlot.MAINHAND, ApConfig.GUN_DROP_CHANCE.get().floatValue());
-        data.putString(TAG_GUN, gun.id());
+        data.putString(TAG_GUN, BuiltInRegistries.ITEM.getKey(gun).toString());
+    }
+
+    /**
+     * The gun this pillager was issued, from its persistent data, or null.
+     *
+     * <p>Stored as the item id. A world armed by 1.0.0 stored a bare catalog
+     * name ("revolver"), which parses as {@code minecraft:revolver} and
+     * resolves to nothing; for those the gun in hand is the record, provided
+     * it is still a weapon.
+     */
+    private static Item issuedGun(Pillager pillager) {
+        String tag = pillager.getPersistentData().getString(TAG_GUN);
+        if (tag.isEmpty()) {
+            return null;
+        }
+        ResourceLocation id = ResourceLocation.tryParse(tag);
+        Item item = id == null ? null : BuiltInRegistries.ITEM.getOptional(id).orElse(null);
+        if (item != null) {
+            return item;
+        }
+        ItemStack held = pillager.getMainHandItem();
+        return PillagerWeapons.isWeapon(held) ? held.getItem() : null;
     }
 
     private static void addGoal(Pillager pillager) {
@@ -137,18 +162,19 @@ public final class PillagerArming {
         if (!(event.getEntity() instanceof Pillager pillager) || !event.isRecentlyHit()) {
             return;
         }
-        PillagerGun gun = PillagerGun.byId(pillager.getPersistentData().getString(TAG_GUN));
+        Item gun = issuedGun(pillager);
         if (gun == null) {
             return;
         }
         unbatterDroppedGun(event);
 
-        // A pack may have dropped the gun's profile since this pillager was
-        // armed; then nothing is known about its ammunition and none drops.
-        WeaponProfile profile = gun.profile().orElse(null);
-        if (profile == null) {
+        // A pack may have unmade the gun since this pillager was armed; then
+        // nothing is known about its ammunition and none drops.
+        RangedWeapon weapon = PillagerWeapons.resolve(new ItemStack(gun));
+        if (weapon == null) {
             return;
         }
+        WeaponProfile profile = weapon.profile();
         RandomSource random = pillager.getRandom();
         Level level = pillager.level();
 

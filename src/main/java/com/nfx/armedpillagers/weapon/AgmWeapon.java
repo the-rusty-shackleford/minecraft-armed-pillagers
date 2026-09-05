@@ -19,18 +19,24 @@ package com.nfx.armedpillagers.weapon;
 
 import com.f708.anothergunmod.core.AmmoContainer;
 import com.f708.anothergunmod.core.AmmoContainerRecord;
+import com.f708.anothergunmod.core.enums.AmmoType;
 import com.f708.anothergunmod.registry.entity.ModEntities;
 import com.f708.anothergunmod.registry.entity.bullet.BulletBuilder;
+import com.f708.anothergunmod.registry.item.ModItems;
 import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.f708.anothergunmod.utils.GunUtils;
-import com.nfx.armedpillagers.PillagerGun;
 import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.RangedWeapons;
 import com.nfx.rangedweapons.api.Shot;
 import com.nfx.rangedweapons.api.WeaponProfile;
 import com.nfx.rangedweapons.api.WeaponStats;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 /**
  * {@link RangedWeapon} for one of Another Gun Mod's guns.
@@ -45,36 +51,37 @@ import net.minecraft.world.item.ItemStack;
  * so a gun mod update can only break this at compile time.
  *
  * <p>The numbers come from two places, and which one is deliberate. What the
- * gun mod knows per stack -- capacity, reload, fire rate, damage, pellets --
- * comes from the item, so a stack with overrides on its components fights as
- * that stack. What the gun mod does not expose -- spread, engagement range,
- * projectile speed and lifetime -- comes from the {@code rangedweapons:weapons}
- * data map, so a pack can retune them without touching code.
+ * gun mod knows per stack -- capacity, reload, fire rate, damage, pellets,
+ * and which round it takes -- comes from the item, so a stack with overrides
+ * on its components fights as that stack. What the gun mod does not expose
+ * -- spread, engagement range, projectile speed and lifetime -- comes from
+ * the {@code rangedweapons:weapons} data map, so a pack can retune them
+ * without touching code.
  *
  * <p>Stateless: one instance serves every stack of its gun. All state is on
  * the stack.
  */
 public final class AgmWeapon implements RangedWeapon {
 
-    private final PillagerGun gun;
+    private final AbstractGunItem gun;
 
     /**
-     * @param gun the catalog entry this weapon serves
+     * @param gun the gun item this weapon serves
      */
-    public AgmWeapon(PillagerGun gun) {
+    public AgmWeapon(AbstractGunItem gun) {
         this.gun = gun;
     }
 
     /**
-     * effects: returns the data-map profile for this gun's item<br>
+     * effects: returns the data-map profile for this gun<br>
      * throws: {@link IllegalStateException} if no pack describes it -- the
      * resolver never hands out a weapon without one, so this is a caller that
      * bypassed the resolver
      */
     @Override
     public WeaponProfile profile() {
-        return gun.profile().orElseThrow(() -> new IllegalStateException(
-                "no rangedweapons:weapons entry for " + gun.id() + "; it is not usable by mobs"));
+        return RangedWeapons.profileOf(gun).orElseThrow(() -> new IllegalStateException(
+                "no rangedweapons:weapons entry for " + id() + "; it is not usable by mobs"));
     }
 
     /**
@@ -116,7 +123,8 @@ public final class AgmWeapon implements RangedWeapon {
     }
 
     /**
-     * Rebuilds the magazine with {@code count} rounds of the gun's ammunition.
+     * Rebuilds the magazine with {@code count} rounds of the round the gun
+     * itself says it takes.
      *
      * <p>Built a round at a time rather than through
      * {@code addNewBullet(stack, n)}: that overload reuses one ItemStack
@@ -132,7 +140,7 @@ public final class AgmWeapon implements RangedWeapon {
             throw new IllegalArgumentException("count must be in [0, " + capacity + "], was " + count);
         }
         AmmoContainerRecord record = new AmmoContainerRecord(new AmmoContainer(item.maxAmmo(stack)));
-        ItemStack round = new ItemStack(gun.ammo());
+        ItemStack round = new ItemStack(roundFor(item.ammoType()));
         for (int i = 0; i < count; i++) {
             record = record.addNewBullet(round);
         }
@@ -143,7 +151,7 @@ public final class AgmWeapon implements RangedWeapon {
     public void consumeRound(ItemStack stack) {
         AbstractGunItem item = gunItem(stack);
         if (item.isAmmoEmpty(stack)) {
-            throw new IllegalStateException("cannot consume a round from an empty " + gun.id());
+            throw new IllegalStateException("cannot consume a round from an empty " + id());
         }
         item.descreaseAmmo(stack);
     }
@@ -175,10 +183,33 @@ public final class AgmWeapon implements RangedWeapon {
         }
     }
 
+    /**
+     * The loose round for each of the gun mod's ammunition types. Exhaustive
+     * on purpose: a type the gun mod adds is a compile error here, not a
+     * pillager that cannot be loaded.
+     */
+    private static Item roundFor(AmmoType type) {
+        return switch (type) {
+            case BULLET -> ModItems.SMALLBULLET.get();
+            case BIG_BULLET -> ModItems.BIGBULLET.get();
+            case SHELL -> ModItems.SHELL.get();
+            case BLAZEROD -> Items.BLAZE_ROD;
+        };
+    }
+
     private AbstractGunItem gunItem(ItemStack stack) {
-        if (!(stack.getItem() instanceof AbstractGunItem item) || !stack.is(gun.gun())) {
-            throw new IllegalArgumentException("not a " + gun.id() + ": " + stack);
+        if (stack.getItem() != gun) {
+            throw new IllegalArgumentException("not a " + id() + ": " + stack);
         }
-        return item;
+        return gun;
+    }
+
+    private ResourceLocation id() {
+        return BuiltInRegistries.ITEM.getKey(gun);
+    }
+
+    @Override
+    public String toString() {
+        return "AgmWeapon[" + id() + "]";
     }
 }

@@ -18,29 +18,36 @@
 package com.nfx.armedpillagers;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.registries.datamaps.DataMapsUpdatedEvent;
+import net.neoforged.neoforge.registries.datamaps.RegisterDataMapTypesEvent;
 import org.slf4j.Logger;
 
 /**
- * Armed Pillagers - NeoForge 1.21.1, addon to F708's Another Gun Mod.
+ * Armed Pillagers - NeoForge 1.21.1. Pillagers that carry firearms and know
+ * how to use them.
  *
- * A slice of newly spawned pillagers carry a revolver or a rifle instead of a
- * crossbow, and a much thinner slice carry a shotgun. Auto-guns, machine guns
- * and flamethrowers are never handed out - see {@link PillagerGun}.
+ * <p>A slice of newly spawned pillagers carry a gun instead of a crossbow.
+ * Which guns, and how often relative to each other, is the
+ * {@code armedpillagers:pillager_loadouts} data map ({@link PillagerLoadouts});
+ * how often at all is config. A loadout is issued only if the item is a
+ * weapon by the Ranged Weapons protocol -- a gun mod provides for it, or a
+ * datapack profile describes it -- and its class is not one config denies
+ * ({@link LoadoutTable}). This mod names no gun mod.
  *
- * Vanilla pillager AI can only operate a crossbow ({@code RangedCrossbowAttackGoal}
- * tests {@code isHolding(CrossbowItem)}), so a gun in the main hand would leave
- * the mob with no ranged attack at all. {@link GunAttackGoal} replaces that:
- * it drives the gun through Another Gun Mod's own item API - its damage, fire
- * rate, reload time, ammo container and BulletEntity - so an armed pillager
- * shoots with exactly the weapon the player would pick up off its corpse.
- *
- * Everything the gun mod is asked for goes through its public classes; nothing
- * here is mixed into, so a gun mod update can only ever break this at compile
- * time, never silently at runtime.
+ * <p>Vanilla pillager AI can only operate a crossbow
+ * ({@code RangedCrossbowAttackGoal} tests {@code isHolding(CrossbowItem)}), so
+ * a gun in the main hand would leave the mob with no ranged attack at all.
+ * {@link GunAttackGoal} replaces that, driving whatever {@code RangedWeapon}
+ * resolves from the mob's hand through the protocol's contract.
  */
 @Mod(ArmedPillagers.MOD_ID)
 public class ArmedPillagers {
@@ -49,5 +56,37 @@ public class ArmedPillagers {
 
     public ArmedPillagers(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.COMMON, ApConfig.SPEC);
+        modBus.addListener(ArmedPillagers::registerDataMaps);
+        // A game-bus event, not a mod-bus one.
+        NeoForge.EVENT_BUS.addListener(ArmedPillagers::onDataMapsUpdated);
+    }
+
+    private static void registerDataMaps(RegisterDataMapTypesEvent event) {
+        event.register(PillagerLoadouts.PILLAGER_LOADOUTS);
+    }
+
+    /**
+     * Fires once per registry after every data map on it has been applied,
+     * so the loadouts and the weapon profiles they are checked against are
+     * both current. The client-sync cause is ignored: the table serves the
+     * server-side AI, and neither data map is synced anyway.
+     */
+    private static void onDataMapsUpdated(DataMapsUpdatedEvent event) {
+        if (event.getCause() != DataMapsUpdatedEvent.UpdateCause.SERVER_RELOAD) {
+            return;
+        }
+        event.ifRegistry(Registries.ITEM, LoadoutTable::rebuild);
+    }
+
+    /**
+     * effects: returns the registry path of {@code item} for log lines --
+     * "revolver", not "anothergunmod:revolver"
+     *
+     * @param item the item
+     * @return its short name
+     */
+    public static String shortName(Item item) {
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+        return key == null ? item.toString() : key.getPath();
     }
 }
