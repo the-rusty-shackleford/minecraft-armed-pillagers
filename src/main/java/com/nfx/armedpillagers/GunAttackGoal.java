@@ -17,11 +17,6 @@
  */
 package com.nfx.armedpillagers;
 
-import com.f708.anothergunmod.registry.entity.ModEntities;
-import com.f708.anothergunmod.registry.entity.bullet.BulletBuilder;
-import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
-import com.f708.anothergunmod.sounds.ModSounds;
-import com.f708.anothergunmod.utils.GunUtils;
 import com.nfx.armedpillagers.domain.Aim;
 import com.nfx.armedpillagers.domain.CombatRules;
 import com.nfx.armedpillagers.domain.FireControl;
@@ -29,10 +24,16 @@ import com.nfx.armedpillagers.domain.FireControl.Inputs;
 import com.nfx.armedpillagers.domain.FireControl.Movement;
 import com.nfx.armedpillagers.domain.FireControl.Outputs;
 import com.nfx.armedpillagers.domain.Vec;
+import com.nfx.armedpillagers.domain.WeaponStats;
+import com.nfx.armedpillagers.weapon.RangedWeapon;
+import com.nfx.armedpillagers.weapon.RangedWeapons;
+import com.nfx.armedpillagers.weapon.Shot;
+import com.nfx.armedpillagers.weapon.WeaponProfile;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -47,34 +48,30 @@ import net.minecraft.world.phys.Vec3;
 import java.util.EnumSet;
 
 /**
- * Ranged combat for a mob holding one of {@link PillagerGun}'s weapons.
+ * Ranged combat for a mob holding a {@link RangedWeapon}.
  *
  * <p>This class is the adapter: each tick it reads the mob into a
  * {@link FireControl.Inputs}, ticks the {@link FireControl} state machine, and
  * applies the {@link FireControl.Outputs} to the mob's navigation, look and
  * trigger. Every decision -- when to close, circle, fire or reload -- lives in
  * the machine, which is pure and tested; what lives here is the reading and
- * the doing, in the same order the inline code did them: move, look, then
- * trigger.
+ * the doing, in the order the inline code did them: move, look, then trigger.
  *
- * <p>Every number comes out of the gun itself, through Another Gun Mod's
- * AbstractGunItem API. Fire rate, damage, pellet count, magazine size and
- * reload time are the item's own, so retuning the guns in that mod's config
- * retunes armed pillagers with them. Ammo is spent out of the held stack's
- * real ammo container, so a gun looted off a pillager arrives with however
- * many rounds it had left.
+ * <p>It knows no gun mod. Every number comes from the weapon's own
+ * {@link WeaponStats} for the held stack, and every effect on the weapon --
+ * spending a round, refilling, launching projectiles -- goes through the
+ * {@link RangedWeapon} contract. Ammo is spent from the held stack, so a gun
+ * looted off a pillager arrives with however many rounds it had left.
  *
- * <p>Reading the reload length and fire cooldown into the inputs costs up to
- * three data-component lookups per tick that the inline code only paid on a
- * reload or a shot. That is the price of a machine that takes plain values,
- * and it is noise beside the line-of-sight raycast this goal has always done
- * every tick.
+ * <p>Cost, stated: one {@code stats(stack)} read per tick, shared by the
+ * machine and the shot, is a handful of data-component lookups per armed mob
+ * per tick -- beside a line-of-sight raycast this goal has always done.
  */
 public class GunAttackGoal extends Goal {
 
     /**
-     * Beyond the near radius a shot is heard as the gun mod's muffled distant
-     * report instead of the close one. 64 matches its own default sound range.
+     * Beyond the near radius a shot is heard as the muffled distant report
+     * instead of the close one. 64 matches the gun mod's default sound range.
      */
     private static final double NEAR_SOUND_RANGE = 16.0;
     private static final double FAR_SOUND_RANGE = 64.0;
@@ -85,8 +82,8 @@ public class GunAttackGoal extends Goal {
 
     // Abstraction function:
     //   AF(mob, speedModifier, control) = the ranged-attack behaviour of `mob`
-    //   with whatever PillagerGun is in its main hand, moving at speedModifier
-    //   when closing, in fire-control state `control`.
+    //   with whatever RangedWeapon resolves from its main hand, moving at
+    //   speedModifier when closing, in fire-control state `control`.
     // Rep invariant:
     //   control's dice are bound to mob.getRandom(), so the mob's random stream
     //   is consumed exactly where the inline code consumed it.
@@ -112,12 +109,12 @@ public class GunAttackGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return hasLivingTarget() && heldGun() != null;
+        return hasLivingTarget() && heldWeapon() != null;
     }
 
     @Override
     public boolean canContinueToUse() {
-        return hasLivingTarget() && heldGun() != null;
+        return hasLivingTarget() && heldWeapon() != null;
     }
 
     private boolean hasLivingTarget() {
@@ -125,8 +122,8 @@ public class GunAttackGoal extends Goal {
         return target != null && target.isAlive();
     }
 
-    private PillagerGun heldGun() {
-        return PillagerGun.of(mob.getMainHandItem());
+    private RangedWeapon heldWeapon() {
+        return RangedWeapons.resolve(mob.getMainHandItem());
     }
 
     @Override
@@ -150,23 +147,21 @@ public class GunAttackGoal extends Goal {
     @Override
     public void tick() {
         LivingEntity target = mob.getTarget();
-        PillagerGun gun = heldGun();
-        if (target == null || gun == null) {
-            return;
-        }
         ItemStack stack = mob.getMainHandItem();
-        if (!(stack.getItem() instanceof AbstractGunItem item)) {
+        RangedWeapon weapon = RangedWeapons.resolve(stack);
+        if (target == null || weapon == null) {
             return;
         }
 
-        double range = gun.range();
+        WeaponStats stats = weapon.stats(stack);
+        double range = stats.engagementRange();
         Inputs in = new Inputs(
                 mob.getSensing().hasLineOfSight(target),
                 mob.distanceToSqr(target),
                 range * range,
-                item.isAmmoEmpty(stack),
-                CombatRules.reloadTicks(item.reloadTime(stack), item.maxAmmo(stack), ApConfig.RELOAD_MULTIPLIER.get()),
-                CombatRules.fireCooldown(item.fireRate(stack)));
+                weapon.isEmpty(stack),
+                CombatRules.reloadTicks(stats.reloadTicksPerRound(), stats.capacity(), ApConfig.RELOAD_MULTIPLIER.get()),
+                CombatRules.fireCooldown(stats.fireRateTicks()));
         Outputs out = control.tick(in);
 
         switch (out.movement()) {
@@ -182,60 +177,63 @@ public class GunAttackGoal extends Goal {
         mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
 
         switch (out.action()) {
-            case RELOAD_FINISHED -> gun.refill(item, stack);
+            case RELOAD_FINISHED -> weapon.load(stack, weapon.capacity(stack));
             case RELOAD_STARTED -> ArmedPillagers.LOGGER.debug("pillager {} reloading its {} for {} ticks",
-                    mob.getUUID(), gun.id(), in.reloadDuration());
-            case FIRE -> fire(target, gun, item, stack);
+                    mob.getUUID(), PillagerGun.shortName(stack.getItem()), in.reloadDuration());
+            case FIRE -> fire(target, weapon, stats, stack);
             case IDLE -> {
                 // Cooling, reloading, or not in position.
             }
         }
     }
 
-    private void fire(LivingEntity target, PillagerGun gun, AbstractGunItem item, ItemStack stack) {
+    private void fire(LivingEntity target, RangedWeapon weapon, WeaponStats stats, ItemStack stack) {
+        if (!(mob.level() instanceof ServerLevel level)) {
+            return;
+        }
         // Eye to centre mass, as an explicit vector: Aim says why the mob's own
         // look angle is not used.
         Aim aim = Aim.at(vec(mob.getEyePosition()), vec(target.position()), target.getBbHeight());
-        Vec3 direction = vec3(aim.direction());
-        Vec3 muzzle = vec3(aim.muzzle());
-
-        float spread = gun.spread();
-        int damage = CombatRules.damage(item.rangedDamage(stack), ApConfig.DAMAGE_MULTIPLIER.get().floatValue());
-        ItemStack round = item.getAmmoContainer(stack).getBullet(0);
-
-        for (int i = 0; i < item.bulletAmountPerShot(stack); i++) {
-            new BulletBuilder(ModEntities.BULLET.get(), mob.level(), mob, stack, GunUtils.getBulletType(round))
-                    .position(muzzle)
-                    .direction(direction)
-                    .speed(4.0F)
-                    .lifetime(100)
-                    .spread(spread, spread, spread)
-                    .damage(damage)
-                    .spawn();
+        if (aim.direction().equals(Vec.ZERO)) {
+            // Target inside the shooter's own head: nowhere to aim. The old
+            // code launched a bullet with no direction; refusing is the one
+            // deliberate deviation.
+            return;
         }
 
-        item.descreaseAmmo(stack);
+        // The consumer's multipliers, applied here so the weapon never sees
+        // config: damage through CombatRules for its floor and rounding,
+        // spread as a plain scale.
+        int damage = CombatRules.damage(stats.damage(), ApConfig.DAMAGE_MULTIPLIER.get().floatValue());
+        WeaponStats forShot = stats.scaled(1.0f, ApConfig.SPREAD_MULTIPLIER.get().floatValue()).withDamage(damage);
+        Shot shot = Shot.of(forShot, vec3(aim.muzzle()), vec3(aim.direction()));
+
+        weapon.fire(level, mob, stack, shot);
+        weapon.consumeRound(stack);
         stack.hurtAndBreak(1, mob, EquipmentSlot.MAINHAND);
-        playShot(gun, muzzle);
+        playShot(level, weapon.profile(), shot.origin());
         ArmedPillagers.LOGGER.debug("pillager {} fires {} ({} x{} dmg), {} rounds left",
-                mob.getUUID(), gun.id(), item.bulletAmountPerShot(stack), damage, item.getAmmo(stack));
+                mob.getUUID(), PillagerGun.shortName(stack.getItem()), shot.count(), damage, weapon.rounds(stack));
     }
 
     /**
      * The close report goes out through the level so everything nearby hears it;
-     * players further out get the gun mod's muffled distant crack instead - the
-     * same two-layer treatment it gives player gunfire.
+     * players further out get the profile's muffled distant report instead -
+     * the same two-layer treatment the gun mod gives player gunfire.
      */
-    private void playShot(PillagerGun gun, Vec3 muzzle) {
-        if (!(mob.level() instanceof ServerLevel level)) {
-            return;
-        }
+    private void playShot(ServerLevel level, WeaponProfile profile, Vec3 muzzle) {
         float pitch = 0.95F + mob.getRandom().nextFloat() * 0.1F;
-        level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
-                gun.shotSound(), SoundSource.HOSTILE, 1.0F, pitch);
+        SoundEvent near = sound(profile.shotSound());
+        if (near != null) {
+            level.playSound(null, mob.getX(), mob.getY(), mob.getZ(), near, SoundSource.HOSTILE, 1.0F, pitch);
+        }
         level.sendParticles(ParticleTypes.SMOKE, muzzle.x, muzzle.y, muzzle.z, 3, 0.02, 0.02, 0.02, 0.01);
 
-        Holder<SoundEvent> far = BuiltInRegistries.SOUND_EVENT.wrapAsHolder(ModSounds.FAR_GUN_SHOT.get());
+        SoundEvent farEvent = sound(profile.farShotSound());
+        if (farEvent == null) {
+            return;
+        }
+        Holder<SoundEvent> far = BuiltInRegistries.SOUND_EVENT.wrapAsHolder(farEvent);
         for (ServerPlayer player : level.players()) {
             double distSqr = player.distanceToSqr(mob);
             if (CombatRules.hearsFarReport(distSqr, NEAR_SOUND_RANGE, FAR_SOUND_RANGE)) {
@@ -243,6 +241,10 @@ public class GunAttackGoal extends Goal {
                         mob.getX(), mob.getY(), mob.getZ(), 1.0F, 1.0F, mob.getRandom().nextLong()));
             }
         }
+    }
+
+    private static SoundEvent sound(java.util.Optional<ResourceLocation> id) {
+        return id.map(BuiltInRegistries.SOUND_EVENT::get).orElse(null);
     }
 
     /** The boundary between the game's vector and the domain's. */

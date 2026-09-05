@@ -120,6 +120,30 @@ public final class CombatRules {
     }
 
     /**
+     * Damage one projectile deals, from a weapon profile's float damage.
+     *
+     * <p>For a whole-number {@code baseDamage} this is identical to
+     * {@link #damage(int, float)}: an int converts to float exactly, so the
+     * product and the rounding are the same. Fractional damage from a
+     * datapack profile takes the same path.
+     *
+     * <p>requires: {@code baseDamage >= 0} and finite; {@code multiplier}
+     * finite and {@code >= 0}<br>
+     * effects: returns {@code max(1, round(baseDamage * multiplier))}, the
+     * product taken in {@code float} and rounded half-up<br>
+     * throws: {@link IllegalArgumentException} if either argument is out of range
+     *
+     * @param baseDamage the weapon's own per-projectile damage
+     * @param multiplier the config scale on top
+     * @return damage per projectile, never less than one
+     */
+    public static int damage(float baseDamage, float multiplier) {
+        requireFiniteNonNegative("baseDamage", baseDamage);
+        requireFiniteNonNegative("multiplier", multiplier);
+        return Math.max(1, Math.round(baseDamage * multiplier));
+    }
+
+    /**
      * Whether a listener hears the muffled distant report of a shot rather
      * than the close one: outside the near radius but inside the far one.
      *

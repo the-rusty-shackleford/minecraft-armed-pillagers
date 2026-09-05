@@ -17,12 +17,16 @@
  */
 package com.nfx.armedpillagers;
 
-import com.f708.anothergunmod.core.AmmoContainer;
-import com.f708.anothergunmod.core.AmmoContainerRecord;
 import com.f708.anothergunmod.registry.item.ModItems;
-import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.f708.anothergunmod.sounds.ModSounds;
+import com.nfx.armedpillagers.domain.WeaponClass;
+import com.nfx.armedpillagers.domain.WeaponStats;
 import com.nfx.armedpillagers.domain.WeightedChoice;
+import com.nfx.armedpillagers.weapon.AgmWeapon;
+import com.nfx.armedpillagers.weapon.RangedWeapon;
+import com.nfx.armedpillagers.weapon.WeaponProfile;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
@@ -30,10 +34,12 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * The only three guns a pillager is ever allowed to hold.
+ * The catalog: the only three guns a pillager is ever allowed to hold, what
+ * each is, and the spawn roll across them.
  *
  * The auto-gun, machine gun and flamethrower are absent on purpose: sustained
  * automatic fire from a mob that never has to reload mid-burst is not a fight,
@@ -42,30 +48,40 @@ import java.util.function.Supplier;
  *
  * Base spreads are looser than {@code GunUtils#getSpread} gives a standing
  * player, so an armed pillager is a worse shot than you are at the same range.
+ *
+ * How a gun is operated lives in {@link AgmWeapon}, behind the
+ * {@link RangedWeapon} contract; this enum only says which guns and what
+ * their profiles are.
  */
 public enum PillagerGun {
-    REVOLVER("revolver",
+    REVOLVER("revolver", WeaponClass.SIDEARM,
             ModItems.REVOLVER, ModItems.SMALLBULLET, ModSounds.REVOLVER_SHOOT,
             0.045F, ApConfig.REVOLVER_RANGE),
 
-    RIFLE("rifle",
+    RIFLE("rifle", WeaponClass.RIFLE,
             ModItems.RIFLE, ModItems.BIGBULLET, ModSounds.RIFLE_SHOT,
             0.030F, ApConfig.RIFLE_RANGE),
 
-    SHOTGUN("shotgun",
+    SHOTGUN("shotgun", WeaponClass.SHOTGUN,
             ModItems.SHOTGUN, ModItems.SHELL, ModSounds.SHOTGUN_SHOT,
             0.140F, ApConfig.SHOTGUN_RANGE);
 
     private final String id;
+    private final WeaponClass weaponClass;
     private final Supplier<Item> gunItem;
     private final Supplier<Item> ammoItem;
     private final Supplier<SoundEvent> shotSound;
     private final float baseSpread;
     private final ModConfigSpec.DoubleValue range;
 
-    PillagerGun(String id, Supplier<Item> gunItem, Supplier<Item> ammoItem,
+    /** Built on first use, once the registries are frozen and the config loaded. */
+    private WeaponProfile profile;
+    private final AgmWeapon weapon = new AgmWeapon(this);
+
+    PillagerGun(String id, WeaponClass weaponClass, Supplier<Item> gunItem, Supplier<Item> ammoItem,
                 Supplier<SoundEvent> shotSound, float baseSpread, ModConfigSpec.DoubleValue range) {
         this.id = id;
+        this.weaponClass = weaponClass;
         this.gunItem = gunItem;
         this.ammoItem = ammoItem;
         this.shotSound = shotSound;
@@ -85,43 +101,41 @@ public enum PillagerGun {
         return ammoItem.get();
     }
 
-    public SoundEvent shotSound() {
-        return shotSound.get();
+    /** The catalog's spread, before the consumer's multiplier. */
+    public float baseSpread() {
+        return baseSpread;
     }
 
-    public float spread() {
-        return baseSpread * ApConfig.SPREAD_MULTIPLIER.get().floatValue();
-    }
-
+    /** The configured engagement range, read live. */
     public double range() {
         return range.get();
     }
 
-    /** A gun loaded to its own maximum: six rounds for a revolver, one for a rifle, five shells. */
-    public ItemStack loadedStack() {
-        ItemStack stack = new ItemStack(gun());
-        if (stack.getItem() instanceof AbstractGunItem item) {
-            refill(item, stack);
-        }
-        return stack;
+    /** The one {@link RangedWeapon} that operates every stack of this gun. */
+    public RangedWeapon weapon() {
+        return weapon;
     }
 
     /**
-     * Fills the gun's ammo container back to capacity.
+     * This gun's profile, built once from the catalog entry.
      *
-     * Built a round at a time rather than through {@code addNewBullet(stack, n)}:
-     * that overload reuses one ItemStack instance for every round and only
-     * capacity-checks once, so it can overfill. The single-round call is the
-     * safe one.
+     * <p>Requires the item and sound registries to be frozen, which they are
+     * by the time a pillager can spawn. The default stats carry the range as
+     * configured at first call; the live per-stack numbers come from
+     * {@link RangedWeapon#stats}, which reads the config each time.
      */
-    public void refill(AbstractGunItem item, ItemStack stack) {
-        int capacity = item.maxAmmo(stack);
-        AmmoContainerRecord record = new AmmoContainerRecord(new AmmoContainer(capacity));
-        ItemStack round = new ItemStack(ammo());
-        for (int i = 0; i < capacity; i++) {
-            record = record.addNewBullet(round);
+    public WeaponProfile profile() {
+        if (profile == null) {
+            profile = new WeaponProfile(
+                    weaponClass,
+                    new WeaponStats(1, 0, 1, 0.0f, 1, baseSpread, (float) range(),
+                            AgmWeapon.PROJECTILE_SPEED, AgmWeapon.PROJECTILE_LIFETIME_TICKS),
+                    Optional.of(BuiltInRegistries.ITEM.getKey(ammo())),
+                    Optional.of(BuiltInRegistries.ITEM.getKey(ModItems.SMALL_MAGAZINE.get())),
+                    Optional.ofNullable(BuiltInRegistries.SOUND_EVENT.getKey(shotSound.get())),
+                    Optional.ofNullable(BuiltInRegistries.SOUND_EVENT.getKey(ModSounds.FAR_GUN_SHOT.get())));
         }
-        AmmoContainerRecord.setContainerToComponent(stack, record);
+        return profile;
     }
 
     public static PillagerGun byId(String id) {
@@ -156,5 +170,11 @@ public enum PillagerGun {
                 new WeightedChoice.Entry<>(RIFLE, ApConfig.RIFLE_CHANCE.get()),
                 new WeightedChoice.Entry<>(REVOLVER, ApConfig.REVOLVER_CHANCE.get())));
         return choice.select(random.nextFloat()).orElse(null);
+    }
+
+    /** The registry path of an item, for log lines: "revolver", not "anothergunmod:revolver". */
+    static String shortName(Item item) {
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+        return key == null ? item.toString() : key.getPath();
     }
 }

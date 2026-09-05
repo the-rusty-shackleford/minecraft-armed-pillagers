@@ -17,17 +17,21 @@
  */
 package com.nfx.armedpillagers;
 
-import com.f708.anothergunmod.core.AmmoContainer;
-import com.f708.anothergunmod.core.AmmoContainerRecord;
-import com.f708.anothergunmod.registry.item.ModItems;
 import com.nfx.armedpillagers.domain.DropRules;
+import com.nfx.armedpillagers.weapon.AmmoStore;
+import com.nfx.armedpillagers.weapon.RangedWeapon;
+import com.nfx.armedpillagers.weapon.RangedWeapons;
+import com.nfx.armedpillagers.weapon.WeaponProfile;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Pillager;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -35,6 +39,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+
+import java.util.Optional;
 
 /**
  * Hands guns out, teaches every pillager how to use one, and decides what a
@@ -47,6 +53,10 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
  * a raid's applyRaidBuffs - does the swap. Marking at spawn rather than at join
  * is what keeps the roll to genuinely new pillagers: ones already saved in the
  * world keep the crossbows they were spawned with.
+ *
+ * Everything done to a weapon here -- filling it at spawn, filling a dropped
+ * magazine -- goes through the {@link RangedWeapon} and {@link AmmoStore}
+ * contracts; this class knows no gun mod.
  */
 @EventBusSubscriber(modid = ArmedPillagers.MOD_ID)
 public final class PillagerArming {
@@ -56,9 +66,6 @@ public final class PillagerArming {
     private static final String TAG_PENDING = "armedpillagers_pending";
     /** Which gun it got, so drops don't depend on the main hand still holding it. */
     private static final String TAG_GUN = "armedpillagers_gun";
-
-    /** Small magazines hold 32, and only ever small bullets. */
-    private static final int SMALL_MAGAZINE_CAPACITY = 32;
 
     @SubscribeEvent
     public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
@@ -99,8 +106,17 @@ public final class PillagerArming {
         if (gun == null) {
             return;
         }
+        ItemStack stack = new ItemStack(gun.gun());
+        RangedWeapon weapon = RangedWeapons.resolve(stack);
+        if (weapon == null) {
+            ArmedPillagers.LOGGER.warn("catalog entry {} resolves to no weapon; pillager {} keeps its crossbow",
+                    gun.id(), pillager.getUUID());
+            return;
+        }
+        weapon.load(stack, weapon.capacity(stack));
+
         ArmedPillagers.LOGGER.debug("arming pillager {} with a {}", pillager.getUUID(), gun.id());
-        pillager.setItemSlot(EquipmentSlot.MAINHAND, gun.loadedStack());
+        pillager.setItemSlot(EquipmentSlot.MAINHAND, stack);
         pillager.setDropChance(EquipmentSlot.MAINHAND, ApConfig.GUN_DROP_CHANCE.get().floatValue());
         data.putString(TAG_GUN, gun.id());
     }
@@ -125,27 +141,33 @@ public final class PillagerArming {
         if (gun == null) {
             return;
         }
+        WeaponProfile profile = gun.profile();
 
         RandomSource random = pillager.getRandom();
         Level level = pillager.level();
 
         unbatterDroppedGun(event);
 
-        if (random.nextFloat() < ApConfig.AMMO_DROP_CHANCE.get()) {
-            ItemStack ammo = new ItemStack(gun.ammo());
+        Item ammoItem = item(profile.ammoItem());
+        if (ammoItem != null && random.nextFloat() < ApConfig.AMMO_DROP_CHANCE.get()) {
+            ItemStack ammo = new ItemStack(ammoItem);
             ammo.setCount(DropRules.ammoCount(ApConfig.AMMO_DROP_MAX.get(), ammo.getMaxStackSize(), random::nextInt));
             event.getDrops().add(drop(level, pillager, ammo));
         }
 
-        if (random.nextFloat() < ApConfig.MAGAZINE_DROP_CHANCE.get()) {
-            event.getDrops().add(drop(level, pillager, loadedMagazine(random)));
+        Item magazineItem = item(profile.magazineItem());
+        if (magazineItem != null && random.nextFloat() < ApConfig.MAGAZINE_DROP_CHANCE.get()) {
+            ItemStack magazine = loadedMagazine(magazineItem, random);
+            if (magazine != null) {
+                event.getDrops().add(drop(level, pillager, magazine));
+            }
         }
     }
 
     /**
      * Vanilla batters dropped equipment down to a sliver of durability, which
      * would make a rare gun drop worthless. Clamp the wear instead; the rule is
-     * DropRules.clampedDamage, this just finds the guns among the drops.
+     * DropRules.clampedDamage, this just finds the weapons among the drops.
      */
     private static void unbatterDroppedGun(LivingDropsEvent event) {
         double cap = ApConfig.MAX_DROPPED_GUN_WEAR.get();
@@ -154,7 +176,7 @@ public final class PillagerArming {
         }
         for (ItemEntity entity : event.getDrops()) {
             ItemStack stack = entity.getItem();
-            if (PillagerGun.of(stack) == null || !stack.isDamageableItem()) {
+            if (!RangedWeapons.isWeapon(stack) || !stack.isDamageableItem()) {
                 continue;
             }
             int clamped = DropRules.clampedDamage(stack.getDamageValue(), stack.getMaxDamage(), cap);
@@ -164,19 +186,25 @@ public final class PillagerArming {
         }
     }
 
-    private static ItemStack loadedMagazine(RandomSource random) {
-        ItemStack magazine = new ItemStack(ModItems.SMALL_MAGAZINE.get());
+    /**
+     * A magazine partly filled with its own rounds, or null if no store knows
+     * how to fill this item -- a magazine nobody can read is inert loot.
+     */
+    private static ItemStack loadedMagazine(Item magazineItem, RandomSource random) {
+        ItemStack magazine = new ItemStack(magazineItem);
+        AmmoStore store = RangedWeapons.ammoStore(magazine);
+        if (store == null) {
+            return null;
+        }
         int rounds = DropRules.magazineRounds(
                 ApConfig.MAGAZINE_MIN_ROUNDS.get(), ApConfig.MAGAZINE_MAX_ROUNDS.get(),
-                SMALL_MAGAZINE_CAPACITY, random::nextInt);
-
-        AmmoContainerRecord record = new AmmoContainerRecord(new AmmoContainer(SMALL_MAGAZINE_CAPACITY));
-        ItemStack round = new ItemStack(ModItems.SMALLBULLET.get());
-        for (int i = 0; i < rounds; i++) {
-            record = record.addNewBullet(round);
-        }
-        AmmoContainerRecord.setContainerToComponent(magazine, record);
+                store.capacity(magazine), random::nextInt);
+        store.load(magazine, rounds);
         return magazine;
+    }
+
+    private static Item item(Optional<ResourceLocation> id) {
+        return id.map(BuiltInRegistries.ITEM::get).orElse(null);
     }
 
     private static ItemEntity drop(Level level, Pillager pillager, ItemStack stack) {

@@ -209,6 +209,29 @@ final class CombatRulesTest {
                 () -> CombatRules.damage(6, Float.POSITIVE_INFINITY));
     }
 
+    @Test
+    void floatDamageMatchesIntDamageForWholeNumbers() {
+        // Same product, same rounding: the profile path may not drift from the item path.
+        for (int base = 0; base <= 20; base++) {
+            for (float mul : new float[] {0.0f, 0.5f, 1.0f, 1.5f, 4.0f}) {
+                assertEquals(CombatRules.damage(base, mul), CombatRules.damage((float) base, mul),
+                        "base " + base + " x " + mul);
+            }
+        }
+    }
+
+    @Test
+    void floatDamageRoundsFractionalBaseHalfUp() {
+        // 4.5 * 1.0 = 4.5 -> 5.
+        assertEquals(5, CombatRules.damage(4.5f, 1.0f));
+    }
+
+    @Test
+    void floatDamageRejectsBadBase() {
+        assertThrows(IllegalArgumentException.class, () -> CombatRules.damage(-1.0f, 1.0f));
+        assertThrows(IllegalArgumentException.class, () -> CombatRules.damage(Float.NaN, 1.0f));
+    }
+
     // --- hearsFarReport -----------------------------------------------------
 
     @Test
