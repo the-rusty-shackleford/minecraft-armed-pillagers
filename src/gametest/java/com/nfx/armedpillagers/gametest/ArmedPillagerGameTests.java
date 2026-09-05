@@ -19,17 +19,25 @@ package com.nfx.armedpillagers.gametest;
 
 import com.nfx.armedpillagers.ApConfig;
 import com.nfx.armedpillagers.ArmedPillagers;
+import com.nfx.armedpillagers.LoadoutTable;
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.RangedWeapons;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Pillager;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.util.List;
 
 /**
  * The one end-to-end assertion: a pillager that spawns through the normal
@@ -71,11 +79,7 @@ public final class ArmedPillagerGameTests {
 
         // The template is an empty box. clearSpaceForStructure leaves its
         // layer 0 as air, so lay the floor the entities will stand on.
-        for (int x = 0; x < ARENA_SIZE; x++) {
-            for (int z = 0; z < ARENA_SIZE; z++) {
-                helper.setBlock(new BlockPos(x, 0, z), Blocks.SMOOTH_STONE);
-            }
-        }
+        layFloor(helper);
 
         // NOT helper.spawn(): that skips finalizeSpawn, and the whole arming
         // path hangs off it (the crossbow is handed out there, and so is our
@@ -103,5 +107,67 @@ public final class ArmedPillagerGameTests {
                 helper.fail("dummy has not been hit", dummy);
             }
         });
+    }
+
+    /**
+     * The fallback tier through this mod's own goal: a pillager handed a
+     * profiled vanilla item -- no gun mod involved -- shoots it. Whatever
+     * the spawn roll issued is overwritten; the goal reads the main hand
+     * every tick, so the stick is what fires.
+     *
+     * @param helper the arena this test was given
+     */
+    @GameTest(template = "arena", timeoutTicks = 400)
+    public void pillagerHandedAProfiledItemFiresIt(GameTestHelper helper) {
+        layFloor(helper);
+        Pillager pillager = EntityType.PILLAGER.spawn(
+                helper.getLevel(), helper.absolutePos(PILLAGER), MobSpawnType.COMMAND);
+        if (pillager == null) {
+            helper.fail("pillager did not spawn");
+            return;
+        }
+
+        ItemStack stick = new ItemStack(Items.STICK);
+        RangedWeapon weapon = RangedWeapons.resolve(stick);
+        if (weapon == null) {
+            helper.fail("the gametest datapack's stick profile did not load");
+            return;
+        }
+        int capacity = weapon.capacity(stick);
+        weapon.load(stick, capacity);
+        pillager.setItemSlot(EquipmentSlot.MAINHAND, stick);
+
+        IronGolem dummy = helper.spawnWithNoFreeWill(EntityType.IRON_GOLEM, DUMMY);
+        float startingHealth = dummy.getHealth();
+
+        helper.succeedWhen(() -> {
+            ItemStack held = pillager.getMainHandItem();
+            helper.assertTrue(held.is(Items.STICK), "the pillager still holds the stick");
+            helper.assertTrue(weapon.rounds(held) < capacity, "a round has been spent from the stick");
+            helper.assertTrue(dummy.getHealth() < startingHealth, "the dummy has been hit");
+        });
+    }
+
+    /**
+     * Admission at reload: the gametest datapack lists a sidearm, an
+     * automatic and an item with no profile. Only the first is a loadout.
+     *
+     * @param helper the arena this test was given
+     */
+    @GameTest(template = "arena")
+    public void loadoutTableAdmitsOnlyWeaponsOfAllowedClasses(GameTestHelper helper) {
+        List<Item> admitted = LoadoutTable.current().admitted();
+        helper.assertTrue(admitted.contains(Items.STICK), "a profiled sidearm is admitted");
+        helper.assertFalse(admitted.contains(Items.BONE), "an automatic is refused by the default deniedClasses");
+        helper.assertFalse(admitted.contains(Items.DIAMOND), "an item with no profile is not a weapon");
+        helper.succeed();
+    }
+
+    private static void layFloor(GameTestHelper helper) {
+        for (int x = 0; x < ARENA_SIZE; x++) {
+            for (int z = 0; z < ARENA_SIZE; z++) {
+                helper.setBlock(new BlockPos(x, 0, z), Blocks.SMOOTH_STONE);
+            }
+        }
     }
 }

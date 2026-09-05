@@ -1,0 +1,53 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="nfx"
+description='''
+Lets mobs use Another Gun Mod's guns natively through the Ranged Weapons
+protocol: the gun mod's own bullets, ammunition and effects.
+
+Without this bridge, a gun that has a protocol profile still works for mobs,
+on the protocol's fallback tier - a generic tracer instead of the gun mod's
+bullet. With it, a pillager's revolver fires exactly what a player's does.
+
+Serves the protocol, not one consumer: any mod that arms mobs through Ranged
+Weapons gets Another Gun Mod's guns from this jar.
+'''
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# The protocol whose capabilities this bridge registers. Nested in this jar,
+# so it is always present; AFTER so its registrations exist before ours run.
+[[dependencies.${mod_id}]]
+    modId="rangedweapons"
+    type="required"
+    versionRange="[1.0,2.0)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Hard dependency: every item, data component and projectile this bridge
+# drives belongs to Another Gun Mod. AFTER so its items exist before the
+# capabilities are registered on them.
+[[dependencies.${mod_id}]]
+    modId="anothergunmod"
+    type="required"
+    versionRange="[1.5,)"
+    ordering="AFTER"
+    side="BOTH"

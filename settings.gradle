@@ -7,3 +7,15 @@ pluginManagement {
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+
+// Bridges are optional subprojects, each binding one gun mod to the protocol
+// natively and building its own jar. A bridge is included only when the
+// third-party jar it compiles against is present, so a clean clone builds
+// the main mod and runs every test on the protocol's fallback tier, and
+// says what it skipped.
+def gunModJar = file("bridges/agm/libs/${providers.gradleProperty('gunmod_jar').get()}")
+if (gunModJar.exists()) {
+    include 'bridges:agm'
+} else {
+    logger.lifecycle("bridges/agm skipped: drop ${gunModJar.name} into bridges/agm/libs/ to build the Another Gun Mod bridge")
+}

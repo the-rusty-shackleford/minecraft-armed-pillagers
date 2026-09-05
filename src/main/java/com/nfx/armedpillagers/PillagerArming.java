@@ -20,7 +20,7 @@ package com.nfx.armedpillagers;
 import com.nfx.armedpillagers.domain.DropRules;
 import com.nfx.rangedweapons.api.AmmoStore;
 import com.nfx.rangedweapons.api.RangedWeapon;
-import com.nfx.armedpillagers.weapon.PillagerWeapons;
+import com.nfx.rangedweapons.api.RangedWeapons;
 import com.nfx.rangedweapons.api.WeaponProfile;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -107,7 +107,7 @@ public final class PillagerArming {
             return;
         }
         ItemStack stack = new ItemStack(gun);
-        RangedWeapon weapon = PillagerWeapons.resolve(stack);
+        RangedWeapon weapon = RangedWeapons.resolve(stack);
         if (weapon == null) {
             // Admitted at the last reload, unmade since: a pack was removed
             // between then and now without a reload, which cannot happen
@@ -143,7 +143,7 @@ public final class PillagerArming {
             return item;
         }
         ItemStack held = pillager.getMainHandItem();
-        return PillagerWeapons.isWeapon(held) ? held.getItem() : null;
+        return RangedWeapons.isWeapon(held) ? held.getItem() : null;
     }
 
     private static void addGoal(Pillager pillager) {
@@ -170,7 +170,7 @@ public final class PillagerArming {
 
         // A pack may have unmade the gun since this pillager was armed; then
         // nothing is known about its ammunition and none drops.
-        RangedWeapon weapon = PillagerWeapons.resolve(new ItemStack(gun));
+        RangedWeapon weapon = RangedWeapons.resolve(new ItemStack(gun));
         if (weapon == null) {
             return;
         }
@@ -206,7 +206,7 @@ public final class PillagerArming {
         }
         for (ItemEntity entity : event.getDrops()) {
             ItemStack stack = entity.getItem();
-            if (!PillagerWeapons.isWeapon(stack) || !stack.isDamageableItem()) {
+            if (!RangedWeapons.isWeapon(stack) || !stack.isDamageableItem()) {
                 continue;
             }
             int clamped = DropRules.clampedDamage(stack.getDamageValue(), stack.getMaxDamage(), cap);
@@ -222,7 +222,7 @@ public final class PillagerArming {
      */
     private static ItemStack loadedMagazine(Item magazineItem, RandomSource random) {
         ItemStack magazine = new ItemStack(magazineItem);
-        AmmoStore store = PillagerWeapons.ammoStore(magazine);
+        AmmoStore store = RangedWeapons.ammoStore(magazine);
         if (store == null) {
             return null;
         }

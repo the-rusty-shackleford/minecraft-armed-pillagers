@@ -21,8 +21,8 @@ import com.nfx.armedpillagers.PillagerLoadouts.Loadout;
 import com.nfx.armedpillagers.domain.LoadoutRules;
 import com.nfx.armedpillagers.domain.LoadoutRules.Weighted;
 import com.nfx.armedpillagers.domain.WeightedChoice;
-import com.nfx.armedpillagers.weapon.PillagerWeapons;
 import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.RangedWeapons;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -127,7 +127,7 @@ public final class LoadoutTable {
             if (item == null) {
                 continue;
             }
-            RangedWeapon weapon = PillagerWeapons.resolve(new ItemStack(item));
+            RangedWeapon weapon = RangedWeapons.resolve(new ItemStack(item));
             if (weapon == null) {
                 ArmedPillagers.LOGGER.warn("pillager loadout {} skipped: no gun mod provides for it and no "
                         + "rangedweapons:weapons profile describes it, so it is not a weapon", id);

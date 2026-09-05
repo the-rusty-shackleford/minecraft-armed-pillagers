@@ -1,0 +1,7 @@
+{
+  "values": {
+    "minecraft:stick": 3,
+    "minecraft:bone": { "weight": 1 },
+    "minecraft:diamond": 1
+  }
+}

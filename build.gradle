@@ -11,6 +11,14 @@ base {
     archivesName = mod_id
 }
 
+// The Another Gun Mod bridge is an optional subproject (see settings.gradle).
+// When it is present the dev runs host it as a second mod, which needs its
+// source set configured before this file reads it.
+def bridgeAgm = findProject(':bridges:agm')
+if (bridgeAgm != null) {
+    evaluationDependsOn(':bridges:agm')
+}
+
 // Mojang ships Java 21 to end users in 1.21.1, so mods must target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
@@ -87,14 +95,30 @@ neoForge {
         "${mod_id}" {
             sourceSet(sourceSets.domain)
             sourceSet(sourceSets.main)
-            // FML must see the @GameTestHolder class as part of this mod for
-            // the annotation scan to find it.
+        }
+        // The gametests are a mod of their own, with their own datapack,
+        // because a mod's several resource roots cannot each supply a file at
+        // one path -- the first root wins -- and the tests need their own
+        // data-map entries beside the ones this jar ships. That also makes
+        // them exercise the mod from outside, exactly as a pack author would.
+        "${mod_id}_gametest" {
             sourceSet(sourceSets.gametest)
+        }
+        if (bridgeAgm != null) {
+            "armedpillagers_agm" {
+                sourceSet(bridgeAgm.sourceSets.main)
+            }
         }
     }
 
     // Deliberately not `domain` and not `test` -- see the layering comment.
     addModdingDependenciesTo(sourceSets.gametest)
+}
+
+// The gametest mod is for the gametest run only; the client and server runs
+// (and so the mcfunction harness) host the shipped mods alone.
+neoForge.runs.matching { it.name != 'gameTestServer' }.configureEach {
+    loadedMods = neoForge.mods.matching { it.name != "${mod_id}_gametest" }
 }
 
 // The gametest run's classpath is gametest.runtimeClasspath. Giving it main's
@@ -110,11 +134,8 @@ configurations {
 }
 
 dependencies {
-    // Another Gun Mod isn't published to any Maven repo, so the jar is vendored
-    // in libs/. compileOnly: we call its public API (items, data components,
-    // BulletBuilder) but never bundle any of it - the pack supplies the real
-    // mod at runtime, and neoforge.mods.toml makes it a hard dependency.
-    compileOnly files("libs/${gunmod_jar}")
+    // No gun mod here. This mod codes against the protocol only; the bridge
+    // subproject is where Another Gun Mod's classes are named.
 
     // The ranged-weapon protocol: compiled against, and nested Jar-in-Jar so
     // the pack needs no separate jar. The range is what this mod is compatible
@@ -131,6 +152,12 @@ dependencies {
 
     gametestImplementation sourceSets.main.output
     gametestImplementation sourceSets.domain.output
+    // The bridge's classes on the run's classpath, as class directories
+    // matching the mod coordinates above -- not its jar, which would be a
+    // second copy of the same mod.
+    if (bridgeAgm != null) {
+        gametestRuntimeOnly bridgeAgm.sourceSets.main.output
+    }
 
     // Plain JUnit 5 against the pure layer only. Gradle 9 no longer injects
     // the platform launcher, so it is declared. These exact versions are the
@@ -152,15 +179,44 @@ jar {
     from sourceSets.domain.output
 }
 
-// NeoForge dev runs scan run/mods, so the gun mod has to physically be there or
-// our hard dependency fails and the run dies before it starts. runGameTestServer
-// matches the filter, so it is covered too.
+// NeoForge dev runs scan run/mods, so when the bridge is built the gun mod has
+// to physically be there or the bridge's hard dependency fails and the run
+// dies before it starts. Without the jar this copies nothing and the runs
+// host the main mod and the gametest mod on the protocol's fallback tier.
 var copyGunModForRuns = tasks.register("copyGunModForRuns", Copy) {
-    from "libs/${gunmod_jar}"
+    from "bridges/agm/libs/${gunmod_jar}"
     into "run/mods"
 }
 tasks.matching { it.name.startsWith("run") }.configureEach {
     dependsOn copyGunModForRuns
+}
+
+// The gametest server's exit code is the number of failed *required* tests,
+// which is also zero when no test ran at all -- a mod the loader refused, a
+// namespace typo, an empty holder class. So the exit code is not the
+// assertion. The assertion is the framework's own summary line in the log,
+// and the task fails without it. `check` runs the gate unless asked not to
+// (`-PskipGameTests`) for fast iteration on the pure tests.
+tasks.named('runGameTestServer') { task ->
+    // Resolved now, not in the action: the configuration cache forbids the
+    // action from touching the project.
+    def logFile = layout.projectDirectory.file('run/logs/latest.log').asFile
+    task.doLast {
+        def text = logFile.exists() ? logFile.text : ''
+        if (text =~ /Missing or unsupported mandatory|Mod loading has failed/) {
+            throw new GradleException("gametest: the loader refused a mod; see ${logFile}")
+        }
+        def passed = (text =~ /All (\d+) required tests passed/)
+        if (!passed.find()) {
+            throw new GradleException("gametest: no 'required tests passed' line in ${logFile}")
+        }
+        task.logger.lifecycle("gametest: all ${passed.group(1)} required tests passed")
+    }
+}
+if (!project.hasProperty('skipGameTests')) {
+    tasks.named('check') {
+        dependsOn 'runGameTestServer'
+    }
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

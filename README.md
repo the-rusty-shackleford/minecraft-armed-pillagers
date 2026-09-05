@@ -58,17 +58,61 @@ crossbows.
 
 Everything is tunable in `config/armedpillagers-common.toml`.
 
+## Two jars, and which you need
+
+**`armedpillagers-<version>.jar`** is the mod. It names no gun mod: everything
+it does to a weapon goes through the [Ranged Weapons](../minecraft-ranged-weapons)
+protocol, which is nested inside the jar. Any item with a protocol profile is a
+weapon a pillager can be issued; the jar ships profiles and loadouts for Another
+Gun Mod's revolver, rifle and shotgun, guarded so they only apply when that mod
+is present.
+
+**`armedpillagers-agm-<version>.jar`** is the Another Gun Mod bridge, built
+from [bridges/agm/](bridges/agm/). It registers the protocol's capability on
+every gun the gun mod has, so a pillager's revolver fires the gun mod's own
+bullets, with the gun mod's own ammunition and effects. Without it the same
+guns still work, on the protocol's fallback tier: a generic tracer that deals
+the profile's damage. The bridge depends on the protocol and on the gun mod,
+not on this mod, so any mod that arms mobs through the protocol gets it for
+free.
+
 ## Building
 
 ```
 ./gradlew build
 ```
-then copy `build/libs/armedpillagers-<version>.jar` into the pack's `mods/`.
-`libs/anothergunmod-*.jar` is vendored for compilation only and is never bundled.
+
+produces `build/libs/armedpillagers-<version>.jar` and, if Another Gun Mod's
+jar is in `bridges/agm/libs/` (see the README there), also
+`bridges/agm/build/libs/armedpillagers-agm-<version>.jar`. Without that jar the
+bridge subproject is skipped with a notice and everything else builds and
+tests as normal. The gun mod is compiled against only and never bundled.
 
 ## Testing
 
-`devtools/run-test.sh` runs one headless pass: it spawns a pillager and a
-stationary 100 HP dummy on a force-loaded platform and prints `APTEST_*` lines
-plus the mod's own DEBUG log as the fight plays out. A dummy kill proves
-reloading works, since 100 HP is more than any of the three guns holds.
+Three tiers, the first two run by `./gradlew check` (and so by `build`):
+
+- `./gradlew test` -- plain JUnit against the `domain` source set, the pure
+  layer: fire control, combat and drop rules, weighted choice, aim, loadout
+  arithmetic. That source set is compiled against nothing but the JDK, so a
+  `net.minecraft` import there is a compile error. Partitions are written at
+  the top of each test class.
+- `./gradlew runGameTestServer` -- gametests on a real headless server. The
+  tests are a mod of their own (`src/gametest`) with their own datapack giving
+  a few vanilla items profiles and loadouts, so they exercise the mod from
+  outside, the way a pack author would, and pass with no gun mod present: a
+  spawned pillager comes out armed and fires; a pillager handed a profiled
+  stick shoots it on the fallback tier; the loadout table admits the sidearm
+  and refuses the automatic and the item with no profile. With the bridge
+  present the same run hosts it and Another Gun Mod too. **The server's exit
+  code is not the assertion** -- it is also zero when no test ran -- so the
+  task reads the framework's own "All N required tests passed" line from
+  `run/logs/latest.log` and fails without it. `-PskipGameTests` leaves it out
+  of `check` for fast iteration on the pure tests.
+- `devtools/run-test.sh` -- the diagnostic run, and the only one that needs
+  the bridge: one headless pass in which a pillager pinned to the revolver by
+  the harness datapack fights a stationary 100 HP dummy on a force-loaded
+  platform, printing `APTEST_*` markers and the mod's DEBUG log as it plays
+  out. A dummy kill proves reloading works, since 100 HP is more than any of
+  the guns holds; the timeline (78-tick revolver reloads, six rounds) is what
+  a behaviour change is measured against.

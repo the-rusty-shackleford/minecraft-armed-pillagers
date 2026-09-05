@@ -1,7 +1,16 @@
 {
   "values": {
-    "anothergunmod:revolver": 80,
-    "anothergunmod:rifle": 50,
-    "anothergunmod:shotgun": 15
+    "anothergunmod:revolver": {
+      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "weight": 80
+    },
+    "anothergunmod:rifle": {
+      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "weight": 50
+    },
+    "anothergunmod:shotgun": {
+      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "weight": 15
+    }
   }
 }

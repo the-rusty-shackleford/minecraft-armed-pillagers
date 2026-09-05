@@ -8,14 +8,19 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="nfx"
 description='''
-Pillagers sometimes carry Another Gun Mod firearms, and know how to use them.
+Pillagers that carry firearms and know how to use them.
 
-A small fraction of pillagers spawn with a revolver, a rifle, or - much more
-rarely - a shotgun, in place of the usual crossbow. Vanilla pillager AI can only
-work a crossbow, so this mod gives armed pillagers their own ranged goal: they
-close to their weapon's range, hold line of sight, fire on the gun's own fire
-rate, and stand exposed while they reload. Machine guns, auto-guns and
-flamethrowers are deliberately never handed out.
+A slice of newly spawned pillagers carry a gun in place of the usual crossbow.
+Which guns, and how often relative to each other, is a data map any datapack
+can edit; how often at all is config. Vanilla pillager AI can only work a
+crossbow, so armed pillagers get their own ranged goal: they close to their
+weapon's range, hold line of sight, fire on the gun's own fire rate, and are
+exposed while they reload. Automatic weapons and flamethrowers are never
+handed out unless config says otherwise.
+
+Works with any gun mod that speaks the Ranged Weapons protocol - natively
+through a bridge, or from a datapack profile alone. Ships profiles and
+loadouts for Another Gun Mod, used when that mod is present.
 
 Killing one can yield the gun, loose ammunition, and a partly loaded magazine.
 Every rate and chance lives in config/armedpillagers-common.toml.
@@ -35,12 +40,13 @@ Every rate and chance lives in config/armedpillagers-common.toml.
     ordering="NONE"
     side="BOTH"
 
-# Hard dependency: every item, data component and projectile this mod hands a
-# pillager belongs to Another Gun Mod. AFTER so its items and config exist
-# before our spawn handler ever runs.
+# No gun mod is required. The profiles and loadouts this jar ships for Another
+# Gun Mod are guarded by neoforge:mod_loaded conditions, and the native bridge
+# for it is a separate jar (armedpillagers-agm) with its own dependency on it.
+# AFTER so that, when present, its items exist before our data maps are read.
 [[dependencies.${mod_id}]]
     modId="anothergunmod"
-    type="required"
+    type="optional"
     versionRange="[1.5,)"
     ordering="AFTER"
     side="BOTH"

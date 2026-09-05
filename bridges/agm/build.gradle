@@ -1,0 +1,84 @@
+// The Another Gun Mod bridge: a separate mod, built from this subproject into
+// its own jar (armedpillagers-agm-<version>.jar), so that the main jar never
+// references com.f708 and a pack without Another Gun Mod never loads code
+// that would fail to link against it.
+//
+// It depends on the protocol, not on Armed Pillagers: it registers the
+// protocol's capabilities on the gun mod's items, and any consumer of the
+// protocol gets that for free. The root settings.gradle includes this
+// subproject only when the vendored jar is present in libs/.
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = 'armedpillagers-agm'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenLocal()
+}
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    // No runs of its own: the root project's runs host this mod alongside
+    // the gametest mod and the gun mod jar copied into run/mods.
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    // Another Gun Mod isn't published to any Maven repo, so the jar is vendored
+    // in libs/. compileOnly: this bridge calls its public API (items, data
+    // components, BulletBuilder) but never bundles any of it -- the pack
+    // supplies the real mod at runtime, and neoforge.mods.toml makes it a
+    // hard dependency.
+    compileOnly files("libs/${gunmod_jar}")
+
+    // The protocol, compiled against and nested Jar-in-Jar; the loader
+    // deduplicates the copy inside the main jar and this one to a single mod.
+    jarJar(implementation("com.nfx.rangedweapons:rangedweapons")) {
+        version {
+            strictly "[1.0,2.0)"
+            prefer "1.0.0"
+        }
+    }
+}
+
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

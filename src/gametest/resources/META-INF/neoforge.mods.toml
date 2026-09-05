@@ -1,0 +1,23 @@
+# The gametests are a mod of their own so they can ship a datapack beside the
+# one the main jar ships. Loaded by the gametest run only; never shipped.
+modLoader="javafml"
+loaderVersion="[1,)"
+license="AGPL-3.0-or-later"
+
+[[mods]]
+modId="armedpillagers_gametest"
+version="1.0.0"
+displayName="Armed Pillagers GameTests"
+authors="nfx"
+description='''
+The gametests and the datapack they run against: profiles and loadouts for a
+few vanilla items, so the mod is exercised on the protocol's fallback tier
+with no gun mod present.
+'''
+
+[[dependencies.armedpillagers_gametest]]
+    modId="armedpillagers"
+    type="required"
+    versionRange="[1.0,)"
+    ordering="AFTER"
+    side="BOTH"

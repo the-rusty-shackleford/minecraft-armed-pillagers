@@ -12,7 +12,7 @@ run/
 # Another Gun Mod is All Rights Reserved and must never be committed. It is
 # `compileOnly` -- nothing from it is bundled into the built mod -- and each
 # builder supplies their own copy per libs/README.txt, which IS tracked.
-libs/*.jar
+bridges/agm/libs/*.jar
 
 # --- Editors / OS -------------------------------------------------------
 .idea/
