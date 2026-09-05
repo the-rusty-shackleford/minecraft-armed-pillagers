@@ -19,6 +19,7 @@ package com.nfx.armedpillagers.weapon;
 
 import com.nfx.rangedweapons.api.AmmoStore;
 import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.RangedWeapons;
 
 import com.f708.anothergunmod.registry.item.ModItems;
 import com.nfx.armedpillagers.PillagerGun;
@@ -28,26 +29,30 @@ import net.minecraft.world.item.ItemStack;
  * Finds the {@link RangedWeapon} or {@link AmmoStore} behind an item stack.
  *
  * <p>This is the one place the consumer asks "is this a weapon, and who
- * operates it?". Today it answers from the {@link PillagerGun} catalog,
- * provided the {@code rangedweapons:weapons} data map describes the gun --
- * a gun no pack describes has no spread, range or sounds, and is not usable
- * by mobs. The capability and data-map tiers plug in here, in precedence
- * order, without the callers changing.
+ * operates it?". It answers from the {@link PillagerGun} catalog first --
+ * a catalog gun is operated natively, through the gun mod's own bullets and
+ * ammunition, provided the {@code rangedweapons:weapons} data map describes
+ * it -- and otherwise from the protocol, whose fallback tier operates any
+ * item with a profile. The precedence is the protocol's own: code that
+ * knows the item beats data describing it.
  */
 public final class PillagerWeapons {
     private PillagerWeapons() {}
 
     /**
      * effects: returns the weapon behind {@code stack}, or null if the stack
-     * is empty, not a weapon any provider knows, or a catalog gun no pack
-     * describes. Two lookups, no allocation: cheap enough to call every tick.
+     * is empty or no tier claims it. A few lookups, no allocation on the
+     * steady state: cheap enough to call every tick.
      *
      * @param stack the stack in question
      * @return its weapon, or null
      */
     public static RangedWeapon resolve(ItemStack stack) {
         PillagerGun gun = PillagerGun.of(stack);
-        return gun == null || gun.profile().isEmpty() ? null : gun.weapon();
+        if (gun != null && gun.profile().isPresent()) {
+            return gun.weapon();
+        }
+        return RangedWeapons.resolve(stack);
     }
 
     /**
