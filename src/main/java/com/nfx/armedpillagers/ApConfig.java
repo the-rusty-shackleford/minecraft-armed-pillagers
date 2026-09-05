@@ -38,9 +38,6 @@ public final class ApConfig {
     public static final ModConfigSpec.DoubleValue DAMAGE_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue SPREAD_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue RELOAD_MULTIPLIER;
-    public static final ModConfigSpec.DoubleValue REVOLVER_RANGE;
-    public static final ModConfigSpec.DoubleValue RIFLE_RANGE;
-    public static final ModConfigSpec.DoubleValue SHOTGUN_RANGE;
 
     // drops
     public static final ModConfigSpec.DoubleValue GUN_DROP_CHANCE;
@@ -81,8 +78,10 @@ public final class ApConfig {
         builder.pop();
 
         builder.comment("How a gun-armed pillager fights. Damage, fire rate, reload time and pellet",
-                        "count all come from Another Gun Mod's own config - these are multipliers on",
-                        "top of it, so retuning the guns there retunes the pillagers too.")
+                        "count come from the gun in hand; spread and the range a pillager engages",
+                        "at come from the rangedweapons:weapons data map, which any datapack can",
+                        "edit. These are multipliers on top of both, so retuning a gun there retunes",
+                        "the pillagers carrying it too.")
                .push("combat");
 
         DAMAGE_MULTIPLIER = builder
@@ -100,19 +99,6 @@ public final class ApConfig {
                 .comment("Scales how long a pillager stands there reloading an empty gun.",
                         "That pause is the whole counterplay window - raise it to make guns fairer.")
                 .defineInRange("reloadMultiplier", 1.0D, 0.25D, 8.0D);
-
-        REVOLVER_RANGE = builder
-                .comment("Blocks at which a revolver pillager stops closing and starts shooting.")
-                .defineInRange("revolverRange", 16.0D, 4.0D, 64.0D);
-
-        RIFLE_RANGE = builder
-                .comment("Blocks at which a rifle pillager stops closing and starts shooting.")
-                .defineInRange("rifleRange", 28.0D, 4.0D, 64.0D);
-
-        SHOTGUN_RANGE = builder
-                .comment("Blocks at which a shotgun pillager stops closing and starts shooting.",
-                        "Short on purpose - it has to walk into your face to be dangerous.")
-                .defineInRange("shotgunRange", 12.0D, 4.0D, 64.0D);
 
         builder.pop();
 

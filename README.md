@@ -19,9 +19,13 @@ Vanilla pillager AI only knows how to work a crossbow, so a gun in the main hand
 would leave the mob harmless. `GunAttackGoal` replaces `RangedCrossbowAttackGoal`
 in the same priority slot: the pillager closes to its weapon's range, holds line
 of sight, circles while it shoots, spends real rounds out of the gun's own ammo
-container, and stands still through a full reload once empty. Damage, fire rate,
-pellet count, magazine size and reload time all come from Another Gun Mod's own
-config, so retuning the guns there retunes the pillagers with them.
+container, and keeps moving through a full reload once empty - the reload is
+the pause in fire, not in movement. Damage, fire rate, pellet count, magazine
+size and reload time come from the gun in hand, so retuning the guns in their
+own mod's config retunes the pillagers with them. Spread, engagement range and
+the projectile's speed and lifetime come from the `rangedweapons:weapons` data
+map - shipped in this jar at `data/rangedweapons/data_maps/item/weapons.json`
+and overridable by any datapack, no code required.
 
 Kill one and it can drop the gun (with most of its durability intact, unlike
 vanilla's battered equipment drops), loose rounds of its own ammunition, and a

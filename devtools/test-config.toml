@@ -21,8 +21,10 @@
 	armRaidPillagers = true
 
 #How a gun-armed pillager fights. Damage, fire rate, reload time and pellet
-#count all come from Another Gun Mod's own config - these are multipliers on
-#top of it, so retuning the guns there retunes the pillagers too.
+#count come from the gun in hand; spread and the range a pillager engages
+#at come from the rangedweapons:weapons data map, which any datapack can
+#edit. These are multipliers on top of both, so retuning a gun there retunes
+#the pillagers carrying it too.
 [combat]
 	#Scales the gun's own damage when a pillager pulls the trigger.
 	#1.0 means a pillager's rifle hits exactly as hard as yours (12).
@@ -40,19 +42,6 @@
 	# Default: 1.0
 	# Range: 0.25 ~ 8.0
 	reloadMultiplier = 1.0
-	#Blocks at which a revolver pillager stops closing and starts shooting.
-	# Default: 16.0
-	# Range: 4.0 ~ 64.0
-	revolverRange = 16.0
-	#Blocks at which a rifle pillager stops closing and starts shooting.
-	# Default: 28.0
-	# Range: 4.0 ~ 64.0
-	rifleRange = 28.0
-	#Blocks at which a shotgun pillager stops closing and starts shooting.
-	#Short on purpose - it has to walk into your face to be dangerous.
-	# Default: 12.0
-	# Range: 4.0 ~ 64.0
-	shotgunRange = 12.0
 
 #What a dead armed pillager leaves behind. All of it needs the kill to be
 #credited to a player, exactly like vanilla mob equipment.

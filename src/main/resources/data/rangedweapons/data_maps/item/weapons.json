@@ -1,0 +1,52 @@
+{
+  "values": {
+    "anothergunmod:revolver": {
+      "class": "sidearm",
+      "capacity": 6,
+      "reload_ticks_per_round": 13,
+      "fire_rate_ticks": 15,
+      "damage": 6.0,
+      "projectiles_per_shot": 1,
+      "spread": 0.045,
+      "engagement_range": 16.0,
+      "projectile_speed": 4.0,
+      "projectile_lifetime_ticks": 100,
+      "ammo": "anothergunmod:small_bullet",
+      "magazine": "anothergunmod:small_magazine",
+      "shot_sound": "anothergunmod:revolver",
+      "far_shot_sound": "anothergunmod:far_shot"
+    },
+    "anothergunmod:rifle": {
+      "class": "rifle",
+      "capacity": 1,
+      "reload_ticks_per_round": 40,
+      "fire_rate_ticks": 20,
+      "damage": 12.0,
+      "projectiles_per_shot": 1,
+      "spread": 0.030,
+      "engagement_range": 28.0,
+      "projectile_speed": 4.0,
+      "projectile_lifetime_ticks": 100,
+      "ammo": "anothergunmod:big_bullet",
+      "magazine": "anothergunmod:small_magazine",
+      "shot_sound": "anothergunmod:rifle_shot",
+      "far_shot_sound": "anothergunmod:far_shot"
+    },
+    "anothergunmod:shotgun": {
+      "class": "shotgun",
+      "capacity": 5,
+      "reload_ticks_per_round": 15,
+      "fire_rate_ticks": 25,
+      "damage": 4.0,
+      "projectiles_per_shot": 5,
+      "spread": 0.140,
+      "engagement_range": 12.0,
+      "projectile_speed": 4.0,
+      "projectile_lifetime_ticks": 100,
+      "ammo": "anothergunmod:shell",
+      "magazine": "anothergunmod:small_magazine",
+      "shot_sound": "anothergunmod:shotgun_shot",
+      "far_shot_sound": "anothergunmod:far_shot"
+    }
+  }
+}

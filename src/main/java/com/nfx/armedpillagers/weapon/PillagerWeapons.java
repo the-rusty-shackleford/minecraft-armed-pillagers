@@ -28,24 +28,26 @@ import net.minecraft.world.item.ItemStack;
  * Finds the {@link RangedWeapon} or {@link AmmoStore} behind an item stack.
  *
  * <p>This is the one place the consumer asks "is this a weapon, and who
- * operates it?". Today it answers from the {@link PillagerGun} catalog; the
- * capability and data-map tiers plug in here, in precedence order, without
- * the callers changing.
+ * operates it?". Today it answers from the {@link PillagerGun} catalog,
+ * provided the {@code rangedweapons:weapons} data map describes the gun --
+ * a gun no pack describes has no spread, range or sounds, and is not usable
+ * by mobs. The capability and data-map tiers plug in here, in precedence
+ * order, without the callers changing.
  */
-public final class RangedWeapons {
-    private RangedWeapons() {}
+public final class PillagerWeapons {
+    private PillagerWeapons() {}
 
     /**
      * effects: returns the weapon behind {@code stack}, or null if the stack
-     * is empty or not a weapon any provider knows. Cheap enough to call every
-     * tick.
+     * is empty, not a weapon any provider knows, or a catalog gun no pack
+     * describes. Two lookups, no allocation: cheap enough to call every tick.
      *
      * @param stack the stack in question
      * @return its weapon, or null
      */
     public static RangedWeapon resolve(ItemStack stack) {
         PillagerGun gun = PillagerGun.of(stack);
-        return gun == null ? null : gun.weapon();
+        return gun == null || gun.profile().isEmpty() ? null : gun.weapon();
     }
 
     /**

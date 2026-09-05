@@ -17,10 +17,6 @@
  */
 package com.nfx.armedpillagers.weapon;
 
-import com.nfx.rangedweapons.api.RangedWeapon;
-import com.nfx.rangedweapons.api.Shot;
-import com.nfx.rangedweapons.api.WeaponProfile;
-
 import com.f708.anothergunmod.core.AmmoContainer;
 import com.f708.anothergunmod.core.AmmoContainerRecord;
 import com.f708.anothergunmod.registry.entity.ModEntities;
@@ -28,6 +24,9 @@ import com.f708.anothergunmod.registry.entity.bullet.BulletBuilder;
 import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.f708.anothergunmod.utils.GunUtils;
 import com.nfx.armedpillagers.PillagerGun;
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.Shot;
+import com.nfx.rangedweapons.api.WeaponProfile;
 import com.nfx.rangedweapons.api.WeaponStats;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
@@ -45,18 +44,17 @@ import net.minecraft.world.item.ItemStack;
  * component. Everything goes through public classes; nothing is mixed into,
  * so a gun mod update can only break this at compile time.
  *
+ * <p>The numbers come from two places, and which one is deliberate. What the
+ * gun mod knows per stack -- capacity, reload, fire rate, damage, pellets --
+ * comes from the item, so a stack with overrides on its components fights as
+ * that stack. What the gun mod does not expose -- spread, engagement range,
+ * projectile speed and lifetime -- comes from the {@code rangedweapons:weapons}
+ * data map, so a pack can retune them without touching code.
+ *
  * <p>Stateless: one instance serves every stack of its gun. All state is on
  * the stack.
  */
 public final class AgmWeapon implements RangedWeapon {
-
-    /**
-     * Muzzle velocity and lifetime the gun mod itself uses in its player
-     * firing path; it does not expose them, so they are pinned here. Public
-     * because the catalog's profile defaults carry them too.
-     */
-    public static final float PROJECTILE_SPEED = 4.0f;
-    public static final int PROJECTILE_LIFETIME_TICKS = 100;
 
     private final PillagerGun gun;
 
@@ -67,31 +65,38 @@ public final class AgmWeapon implements RangedWeapon {
         this.gun = gun;
     }
 
+    /**
+     * effects: returns the data-map profile for this gun's item<br>
+     * throws: {@link IllegalStateException} if no pack describes it -- the
+     * resolver never hands out a weapon without one, so this is a caller that
+     * bypassed the resolver
+     */
     @Override
     public WeaponProfile profile() {
-        return gun.profile();
+        return gun.profile().orElseThrow(() -> new IllegalStateException(
+                "no rangedweapons:weapons entry for " + gun.id() + "; it is not usable by mobs"));
     }
 
     /**
      * effects: returns the stack's own numbers from the gun mod, clamped into
      * the protocol's ranges (the mod's config accepts values the protocol
      * rejects, and a fire rate of zero must not make a tick throw), with
-     * spread and range from the catalog and the pinned projectile speed and
-     * lifetime
+     * spread, range, projectile speed and lifetime from the profile
      */
     @Override
     public WeaponStats stats(ItemStack stack) {
         AbstractGunItem item = gunItem(stack);
+        WeaponStats defaults = profile().defaults();
         return new WeaponStats(
                 Math.max(1, item.maxAmmo(stack)),
                 Math.max(0, item.reloadTime(stack)),
                 Math.max(1, item.fireRate(stack)),
                 Math.max(0, item.rangedDamage(stack)),
                 Math.max(1, item.bulletAmountPerShot(stack)),
-                gun.baseSpread(),
-                (float) gun.range(),
-                PROJECTILE_SPEED,
-                PROJECTILE_LIFETIME_TICKS);
+                defaults.spread(),
+                defaults.engagementRange(),
+                defaults.projectileSpeed(),
+                defaults.projectileLifetimeTicks());
     }
 
     @Override

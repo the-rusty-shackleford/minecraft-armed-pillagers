@@ -26,7 +26,7 @@ import com.nfx.armedpillagers.domain.FireControl.Outputs;
 import com.nfx.armedpillagers.domain.Vec;
 import com.nfx.rangedweapons.api.WeaponStats;
 import com.nfx.rangedweapons.api.RangedWeapon;
-import com.nfx.armedpillagers.weapon.RangedWeapons;
+import com.nfx.armedpillagers.weapon.PillagerWeapons;
 import com.nfx.rangedweapons.api.Shot;
 import com.nfx.rangedweapons.api.WeaponProfile;
 import net.minecraft.core.Holder;
@@ -123,7 +123,7 @@ public class GunAttackGoal extends Goal {
     }
 
     private RangedWeapon heldWeapon() {
-        return RangedWeapons.resolve(mob.getMainHandItem());
+        return PillagerWeapons.resolve(mob.getMainHandItem());
     }
 
     @Override
@@ -148,7 +148,7 @@ public class GunAttackGoal extends Goal {
     public void tick() {
         LivingEntity target = mob.getTarget();
         ItemStack stack = mob.getMainHandItem();
-        RangedWeapon weapon = RangedWeapons.resolve(stack);
+        RangedWeapon weapon = PillagerWeapons.resolve(stack);
         if (target == null || weapon == null) {
             return;
         }
