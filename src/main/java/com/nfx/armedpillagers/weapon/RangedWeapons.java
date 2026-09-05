@@ -17,6 +17,9 @@
  */
 package com.nfx.armedpillagers.weapon;
 
+import com.nfx.rangedweapons.api.AmmoStore;
+import com.nfx.rangedweapons.api.RangedWeapon;
+
 import com.f708.anothergunmod.registry.item.ModItems;
 import com.nfx.armedpillagers.PillagerGun;
 import net.minecraft.world.item.ItemStack;

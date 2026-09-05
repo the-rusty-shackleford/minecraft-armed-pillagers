@@ -18,6 +18,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 // lives on Central.
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 // Three layers, one direction of dependency:
@@ -96,12 +97,35 @@ neoForge {
     addModdingDependenciesTo(sourceSets.gametest)
 }
 
+// The gametest run's classpath is gametest.runtimeClasspath. Giving it main's
+// *classes* (below) is not the same as giving it main's *dependencies*: without
+// this, the nested protocol mod is absent from that run, the loader refuses
+// to start for a missing mandatory dependency, zero tests execute, and the
+// gametest server exits 0 for zero failures -- a green gate that tested
+// nothing. Inheriting main's configurations is the fix; the README also tells
+// the reader to look for the "required tests passed" line, not the exit code.
+configurations {
+    gametestImplementation.extendsFrom implementation
+    gametestRuntimeOnly.extendsFrom runtimeOnly
+}
+
 dependencies {
     // Another Gun Mod isn't published to any Maven repo, so the jar is vendored
     // in libs/. compileOnly: we call its public API (items, data components,
     // BulletBuilder) but never bundle any of it - the pack supplies the real
     // mod at runtime, and neoforge.mods.toml makes it a hard dependency.
     compileOnly files("libs/${gunmod_jar}")
+
+    // The ranged-weapon protocol: compiled against, and nested Jar-in-Jar so
+    // the pack needs no separate jar. The range is what this mod is compatible
+    // with; the loader deduplicates nested copies and may hand a consumer a
+    // lower version than it prefers if another mod caps the range.
+    jarJar(implementation("com.nfx.rangedweapons:rangedweapons")) {
+        version {
+            strictly "[1.0,2.0)"
+            prefer "1.0.0"
+        }
+    }
 
     implementation sourceSets.domain.output
 

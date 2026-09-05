@@ -19,12 +19,12 @@ package com.nfx.armedpillagers;
 
 import com.f708.anothergunmod.registry.item.ModItems;
 import com.f708.anothergunmod.sounds.ModSounds;
-import com.nfx.armedpillagers.domain.WeaponClass;
-import com.nfx.armedpillagers.domain.WeaponStats;
+import com.nfx.rangedweapons.api.WeaponClass;
+import com.nfx.rangedweapons.api.WeaponStats;
 import com.nfx.armedpillagers.domain.WeightedChoice;
 import com.nfx.armedpillagers.weapon.AgmWeapon;
-import com.nfx.armedpillagers.weapon.RangedWeapon;
-import com.nfx.armedpillagers.weapon.WeaponProfile;
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.WeaponProfile;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;

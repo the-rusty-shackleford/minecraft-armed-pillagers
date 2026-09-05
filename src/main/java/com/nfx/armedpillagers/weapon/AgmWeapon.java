@@ -17,6 +17,10 @@
  */
 package com.nfx.armedpillagers.weapon;
 
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.Shot;
+import com.nfx.rangedweapons.api.WeaponProfile;
+
 import com.f708.anothergunmod.core.AmmoContainer;
 import com.f708.anothergunmod.core.AmmoContainerRecord;
 import com.f708.anothergunmod.registry.entity.ModEntities;
@@ -24,7 +28,7 @@ import com.f708.anothergunmod.registry.entity.bullet.BulletBuilder;
 import com.f708.anothergunmod.registry.item.custom.AbstractGunItem;
 import com.f708.anothergunmod.utils.GunUtils;
 import com.nfx.armedpillagers.PillagerGun;
-import com.nfx.armedpillagers.domain.WeaponStats;
+import com.nfx.rangedweapons.api.WeaponStats;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;

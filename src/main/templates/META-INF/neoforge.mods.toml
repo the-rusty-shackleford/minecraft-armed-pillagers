@@ -44,3 +44,12 @@ Every rate and chance lives in config/armedpillagers-common.toml.
     versionRange="[1.5,)"
     ordering="AFTER"
     side="BOTH"
+
+# The ranged-weapon protocol this mod codes against. Nested in this jar, so
+# it is always present; AFTER so its registrations exist before ours run.
+[[dependencies.${mod_id}]]
+    modId="rangedweapons"
+    type="required"
+    versionRange="[1.0,2.0)"
+    ordering="AFTER"
+    side="BOTH"

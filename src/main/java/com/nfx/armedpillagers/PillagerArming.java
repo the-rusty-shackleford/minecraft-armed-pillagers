@@ -18,10 +18,10 @@
 package com.nfx.armedpillagers;
 
 import com.nfx.armedpillagers.domain.DropRules;
-import com.nfx.armedpillagers.weapon.AmmoStore;
-import com.nfx.armedpillagers.weapon.RangedWeapon;
+import com.nfx.rangedweapons.api.AmmoStore;
+import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.armedpillagers.weapon.RangedWeapons;
-import com.nfx.armedpillagers.weapon.WeaponProfile;
+import com.nfx.rangedweapons.api.WeaponProfile;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;

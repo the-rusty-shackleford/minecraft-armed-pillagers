@@ -17,6 +17,8 @@
  */
 package com.nfx.armedpillagers.weapon;
 
+import com.nfx.rangedweapons.api.AmmoStore;
+
 import com.f708.anothergunmod.core.AmmoContainer;
 import com.f708.anothergunmod.core.AmmoContainerRecord;
 import com.f708.anothergunmod.registry.item.ModItems;
