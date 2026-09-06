@@ -49,7 +49,11 @@ size and reload time come from the gun in hand, so retuning the guns in their
 own mod's config retunes the pillagers with them. Spread, engagement range and
 the projectile's speed and lifetime come from the `rangedweapons:weapons` data
 map - shipped in this jar at `data/rangedweapons/data_maps/item/weapons.json`
-and overridable by any datapack, no code required.
+and overridable by any datapack, no code required. The same file names each
+gun's ammunition family, and Another Gun Mod's rounds are tagged into the
+protocol's families here (`small_bullet` small, `big_bullet` medium, `shell`
+shell, as optional tag entries, so nothing breaks without that mod): a gun on
+the protocol that takes medium rounds takes a pillager's dropped rifle rounds.
 
 Kill one and it can drop the gun (with most of its durability intact, unlike
 vanilla's battered equipment drops), loose rounds of its own ammunition, and a

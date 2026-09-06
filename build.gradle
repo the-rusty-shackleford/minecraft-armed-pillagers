@@ -144,7 +144,7 @@ dependencies {
     jarJar(implementation("com.nfx.rangedweapons:rangedweapons")) {
         version {
             strictly "[1.0,2.0)"
-            prefer "1.2.2"
+            prefer "1.4.1"
         }
     }
 

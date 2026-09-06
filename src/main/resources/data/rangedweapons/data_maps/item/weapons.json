@@ -1,7 +1,12 @@
 {
   "values": {
     "anothergunmod:revolver": {
-      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "anothergunmod"
+        }
+      ],
       "class": "sidearm",
       "capacity": 6,
       "reload_ticks_per_round": 13,
@@ -13,40 +18,53 @@
       "projectile_speed": 4.0,
       "projectile_lifetime_ticks": 100,
       "ammo": "anothergunmod:small_bullet",
+      "ammo_family": "#rangedweapons:ammo/small",
       "magazine": "anothergunmod:small_magazine",
       "shot_sound": "anothergunmod:revolver",
       "far_shot_sound": "anothergunmod:far_shot"
     },
     "anothergunmod:rifle": {
-      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "anothergunmod"
+        }
+      ],
       "class": "rifle",
       "capacity": 1,
       "reload_ticks_per_round": 40,
       "fire_rate_ticks": 20,
       "damage": 12.0,
       "projectiles_per_shot": 1,
-      "spread": 0.030,
+      "spread": 0.03,
       "engagement_range": 28.0,
       "projectile_speed": 4.0,
       "projectile_lifetime_ticks": 100,
       "ammo": "anothergunmod:big_bullet",
+      "ammo_family": "#rangedweapons:ammo/medium",
       "magazine": "anothergunmod:small_magazine",
       "shot_sound": "anothergunmod:rifle_shot",
       "far_shot_sound": "anothergunmod:far_shot"
     },
     "anothergunmod:shotgun": {
-      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "anothergunmod"
+        }
+      ],
       "class": "shotgun",
       "capacity": 5,
       "reload_ticks_per_round": 15,
       "fire_rate_ticks": 25,
       "damage": 4.0,
       "projectiles_per_shot": 5,
-      "spread": 0.140,
+      "spread": 0.14,
       "engagement_range": 12.0,
       "projectile_speed": 4.0,
       "projectile_lifetime_ticks": 100,
       "ammo": "anothergunmod:shell",
+      "ammo_family": "#rangedweapons:ammo/shell",
       "magazine": "anothergunmod:small_magazine",
       "shot_sound": "anothergunmod:shotgun_shot",
       "far_shot_sound": "anothergunmod:far_shot"
