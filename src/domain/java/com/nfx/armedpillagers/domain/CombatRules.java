@@ -143,26 +143,6 @@ public final class CombatRules {
         return Math.max(1, Math.round(baseDamage * multiplier));
     }
 
-    /**
-     * Whether a listener hears the muffled distant report of a shot rather
-     * than the close one: outside the near radius but inside the far one.
-     *
-     * <p>requires: all arguments {@code >= 0}<br>
-     * effects: returns {@code near*near < distSqr && distSqr <= far*far}<br>
-     * throws: {@link IllegalArgumentException} if any argument is negative or
-     * NaN
-     *
-     * @param distSqr squared distance from the shooter to the listener
-     * @param near    radius, in blocks, within which the close report is heard
-     * @param far     radius, in blocks, beyond which nothing is heard
-     * @return whether this listener gets the far report
-     */
-    public static boolean hearsFarReport(double distSqr, double near, double far) {
-        requireNonNegative("distSqr", distSqr);
-        requireNonNegative("near", near);
-        requireNonNegative("far", far);
-        return near * near < distSqr && distSqr <= far * far;
-    }
 
     private static void requireFiniteNonNegative(String name, double value) {
         // `!(value >= 0)` rather than `value < 0` so that NaN fails too.
@@ -171,9 +151,4 @@ public final class CombatRules {
         }
     }
 
-    private static void requireNonNegative(String name, double value) {
-        if (!(value >= 0)) {
-            throw new IllegalArgumentException(name + " must be >= 0, was " + value);
-        }
-    }
 }

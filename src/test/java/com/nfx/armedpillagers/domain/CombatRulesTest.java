@@ -48,10 +48,6 @@ import org.junit.jupiter.api.Test;
  *   multiplier:          the config maximum 4
  *   invalid:             negative / NaN / infinite multiplier
  *
- * hearsFarReport(distSqr, near, far):
- *   distSqr vs near²:    below / exactly at (not far) / just above
- *   distSqr vs far²:     exactly at (still far) / above (silent)
- *   invalid:             any negative argument / NaN
  * </pre>
  */
 final class CombatRulesTest {
@@ -232,42 +228,4 @@ final class CombatRulesTest {
         assertThrows(IllegalArgumentException.class, () -> CombatRules.damage(Float.NaN, 1.0f));
     }
 
-    // --- hearsFarReport -----------------------------------------------------
-
-    @Test
-    void insideTheNearRadiusHearsTheCloseReportNotTheFarOne() {
-        assertFalse(CombatRules.hearsFarReport(100.0, 16.0, 64.0));
-    }
-
-    @Test
-    void exactlyOnTheNearRadiusIsStillTheCloseReport() {
-        assertFalse(CombatRules.hearsFarReport(16.0 * 16.0, 16.0, 64.0));
-    }
-
-    @Test
-    void justPastTheNearRadiusHearsTheFarReport() {
-        assertTrue(CombatRules.hearsFarReport(16.0 * 16.0 + 1.0, 16.0, 64.0));
-    }
-
-    @Test
-    void exactlyOnTheFarRadiusStillHearsTheFarReport() {
-        assertTrue(CombatRules.hearsFarReport(64.0 * 64.0, 16.0, 64.0));
-    }
-
-    @Test
-    void beyondTheFarRadiusHearsNothing() {
-        assertFalse(CombatRules.hearsFarReport(64.0 * 64.0 + 1.0, 16.0, 64.0));
-    }
-
-    @Test
-    void farReportRejectsNegativeArguments() {
-        assertThrows(IllegalArgumentException.class, () -> CombatRules.hearsFarReport(-1.0, 16.0, 64.0));
-        assertThrows(IllegalArgumentException.class, () -> CombatRules.hearsFarReport(100.0, -16.0, 64.0));
-        assertThrows(IllegalArgumentException.class, () -> CombatRules.hearsFarReport(100.0, 16.0, -64.0));
-    }
-
-    @Test
-    void farReportRejectsNaN() {
-        assertThrows(IllegalArgumentException.class, () -> CombatRules.hearsFarReport(Double.NaN, 16.0, 64.0));
-    }
 }

@@ -27,16 +27,9 @@ import com.nfx.armedpillagers.domain.Vec;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import com.nfx.rangedweapons.api.Shot;
-import com.nfx.rangedweapons.api.WeaponProfile;
+import com.nfx.rangedweapons.api.ShotReport;
 import com.nfx.rangedweapons.api.WeaponStats;
-import net.minecraft.core.Holder;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.game.ClientboundSoundPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -69,12 +62,6 @@ import java.util.EnumSet;
  */
 public class GunAttackGoal extends Goal {
 
-    /**
-     * Beyond the near radius a shot is heard as the muffled distant report
-     * instead of the close one. 64 matches the gun mod's default sound range.
-     */
-    private static final double NEAR_SOUND_RANGE = 16.0;
-    private static final double FAR_SOUND_RANGE = 64.0;
 
     private final Mob mob;
     private final double speedModifier;
@@ -211,41 +198,13 @@ public class GunAttackGoal extends Goal {
         weapon.fire(level, mob, stack, shot);
         weapon.consumeRound(stack);
         stack.hurtAndBreak(1, mob, EquipmentSlot.MAINHAND);
-        playShot(level, weapon.profile(), shot.origin());
+        ShotReport.play(level, mob, weapon.profile(), shot.origin(), SoundSource.HOSTILE,
+                0.95F + mob.getRandom().nextFloat() * 0.1F);
         ArmedPillagers.LOGGER.debug("pillager {} fires {} ({} x{} dmg), {} rounds left",
                 mob.getUUID(), ArmedPillagers.shortName(stack.getItem()), shot.count(), damage, weapon.rounds(stack));
     }
 
-    /**
-     * The close report goes out through the level so everything nearby hears it;
-     * players further out get the profile's muffled distant report instead -
-     * the same two-layer treatment the gun mod gives player gunfire.
-     */
-    private void playShot(ServerLevel level, WeaponProfile profile, Vec3 muzzle) {
-        float pitch = 0.95F + mob.getRandom().nextFloat() * 0.1F;
-        SoundEvent near = sound(profile.shotSound());
-        if (near != null) {
-            level.playSound(null, mob.getX(), mob.getY(), mob.getZ(), near, SoundSource.HOSTILE, 1.0F, pitch);
-        }
-        level.sendParticles(ParticleTypes.SMOKE, muzzle.x, muzzle.y, muzzle.z, 3, 0.02, 0.02, 0.02, 0.01);
 
-        SoundEvent farEvent = sound(profile.farShotSound());
-        if (farEvent == null) {
-            return;
-        }
-        Holder<SoundEvent> far = BuiltInRegistries.SOUND_EVENT.wrapAsHolder(farEvent);
-        for (ServerPlayer player : level.players()) {
-            double distSqr = player.distanceToSqr(mob);
-            if (CombatRules.hearsFarReport(distSqr, NEAR_SOUND_RANGE, FAR_SOUND_RANGE)) {
-                player.connection.send(new ClientboundSoundPacket(far, SoundSource.HOSTILE,
-                        mob.getX(), mob.getY(), mob.getZ(), 1.0F, 1.0F, mob.getRandom().nextLong()));
-            }
-        }
-    }
-
-    private static SoundEvent sound(java.util.Optional<ResourceLocation> id) {
-        return id.map(BuiltInRegistries.SOUND_EVENT::get).orElse(null);
-    }
 
     /** The boundary between the game's vector and the domain's. */
     private static Vec vec(Vec3 v) {
