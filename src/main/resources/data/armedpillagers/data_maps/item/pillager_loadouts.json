@@ -1,16 +1,76 @@
 {
   "values": {
     "anothergunmod:revolver": {
-      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "anothergunmod"
+        }
+      ],
       "weight": 80
     },
     "anothergunmod:rifle": {
-      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "anothergunmod"
+        }
+      ],
       "weight": 50
     },
     "anothergunmod:shotgun": {
-      "neoforge:conditions": [{ "type": "neoforge:mod_loaded", "modid": "anothergunmod" }],
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "anothergunmod"
+        }
+      ],
       "weight": 15
+    },
+    "rangedweaponsmod:pistol": {
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "rangedweaponsmod"
+        }
+      ],
+      "weight": 60
+    },
+    "rangedweaponsmod:shotgun": {
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "rangedweaponsmod"
+        }
+      ],
+      "weight": 20
+    },
+    "rangedweaponsmod:rifle": {
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "rangedweaponsmod"
+        }
+      ],
+      "weight": 30
+    },
+    "rangedweaponsmod:scoped_rifle": {
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "rangedweaponsmod"
+        }
+      ],
+      "weight": 12
+    },
+    "rangedweaponsmod:machine_gun": {
+      "neoforge:conditions": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "rangedweaponsmod"
+        }
+      ],
+      "weight": 6
     }
   }
 }

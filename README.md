@@ -14,11 +14,22 @@ How often is config (`armedChance`, default 0.145 - about one in seven). Which
 gun is the `armedpillagers:pillager_loadouts` data map, a weighted pick that
 any datapack can edit; this jar ships:
 
-| Weapon   | Weight | Share of armed pillagers | Overall at the default | Behaviour |
-|----------|--------|--------------------------|------------------------|-----------|
-| Revolver | 80     | 55%                      | 8%                     | 6 rounds, 6 damage, ~0.75 s between shots |
-| Rifle    | 50     | 34%                      | 5%                     | 1 round, 12 damage, longest reach, reloads every shot |
-| Shotgun  | 15     | 10%                      | **1.5%**               | 5 shells, 5 pellets x 4 damage, has to close to ~12 blocks |
+| Weapon (mod)               | Weight | Share of armed pillagers | Overall at the default | Behaviour |
+|----------------------------|--------|--------------------------|------------------------|-----------|
+| Revolver (Another Gun Mod) | 80     | 29%                      | 4.2%                   | 6 rounds, 6 damage, ~0.75 s between shots |
+| Pistol (Ranged Weapons)    | 60     | 22%                      | 3.2%                   | 15 rounds, 6 damage, one per 0.25 s |
+| Rifle (Another Gun Mod)    | 50     | 18%                      | 2.7%                   | 1 round, 12 damage, longest reach, reloads every shot |
+| Rifle (Ranged Weapons)     | 30     | 11%                      | 1.6%                   | 30 rounds, 12 damage, one per 0.3 s |
+| Shotgun (Ranged Weapons)   | 20     | 7%                       | 1.1%                   | 6 shells, 6 pellets x 4, has to close to ~12 blocks |
+| Shotgun (Another Gun Mod)  | 15     | 5%                       | 0.8%                   | 5 shells, 5 pellets x 4 damage, has to close to ~12 blocks |
+| Scoped rifle (Ranged Weapons) | 12  | 4%                       | 0.6%                   | 30 rounds, 16 damage, reach to 64, one per second |
+| Machine gun (Ranged Weapons) | 6    | 2%                       | **0.3%**               | 75 rounds at 7 a second, 6 damage -- and only with `automatic` taken off `deniedClasses` |
+
+Each mod's rows are present only when that mod is loaded (a
+`neoforge:mod_loaded` condition on the entry); with one mod alone its rows
+share the whole armed chance among themselves. Lower damage is more common
+by design; the machine gun is the rarest thing a pillager can carry, and is
+refused by the default config besides.
 
 A loadout is a request, not a guarantee. An entry is issued only if the item
 is a weapon by the Ranged Weapons protocol - a gun mod provides for it, or a

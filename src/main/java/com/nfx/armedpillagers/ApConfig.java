@@ -61,9 +61,13 @@ public final class ApConfig {
 
         ARMED_CHANCE = builder
                 .comment("Chance a newly spawned pillager is armed at all. Which gun is then decided by",
-                        "the loadouts' weights: this jar ships revolver 80, rifle 50, shotgun 15, so at",
-                        "the default roughly one pillager in seven is armed - 8% revolver, 5% rifle,",
-                        "1.5% shotgun. Read live; no reload needed.")
+                        "the loadouts' weights: this jar ships Another Gun Mod's revolver 80, rifle 50,",
+                        "shotgun 15, and Ranged Weapons Mod's pistol 60, shotgun 20, rifle 30, scoped",
+                        "rifle 12, machine gun 6, each set present only with its mod. With both mods",
+                        "at the default roughly one pillager in seven is armed - revolver 4.2%,",
+                        "pistol 3.2%, AGM rifle 2.7%, rifle 1.6%, shotgun 1.1%, AGM shotgun 0.8%,",
+                        "scoped rifle 0.6%, machine gun 0.3% (and only if 'automatic' is taken off",
+                        "deniedClasses). Read live; no reload needed.")
                 .defineInRange("armedChance", 0.145D, 0.0D, 1.0D);
 
         DENIED_CLASSES = builder
