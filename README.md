@@ -77,6 +77,13 @@ crossbows.
 
 Everything is tunable in `config/armedpillagers-common.toml`.
 
+Since 1.3, a pillager holding a protocol weapon exposes vanilla's `CROSSBOW_HOLD`
+arm pose, including while idle, so Fresh Animations recognizes the held gun.
+Non-weapons retain vanilla's pose selection. This is the illager's crossbow hold
+for any protocol gun; it does not invent a separate one-handed illager animation.
+The Another Gun Mod profiles also declare shared grip metadata (revolver one hand,
+rifle/shotgun two), available to all consumers through Ranged Weapons 1.7 or later.
+
 ## Two jars, and which you need
 
 **`armedpillagers-<version>.jar`** is the mod. It names no gun mod: everything
@@ -122,7 +129,8 @@ Three tiers, the first two run by `./gradlew check` (and so by `build`):
   outside, the way a pack author would, and pass with no gun mod present: a
   spawned pillager comes out armed and fires; a pillager handed a profiled
   stick shoots it on the fallback tier; the loadout table admits the sidearm
-  and refuses the automatic and the item with no profile. With the bridge
+  and refuses the automatic and the item with no profile; protocol guns select
+  crossbow hold while non-weapons keep their idle/aggressive vanilla poses. With the bridge
   present the same run hosts it and Another Gun Mod too. **The server's exit
   code is not the assertion** -- it is also zero when no test ran -- so the
   task reads the framework's own "All N required tests passed" line from
@@ -135,3 +143,7 @@ Three tiers, the first two run by `./gradlew check` (and so by `build`):
   out. A dummy kill proves reloading works, since 100 HP is more than any of
   the guns holds; the timeline (78-tick revolver reloads, six rounds) is what
   a behaviour change is measured against.
+
+The companion Ranged Weapons Mod's `runPhotoBooth -PboothObservers`, with this
+jar in its `run/booth/mods`, verifies the pose on a real observing client and
+photographs it beside a player. The booth is also checked with Fresh Animations.

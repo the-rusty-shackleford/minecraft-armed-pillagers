@@ -30,6 +30,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Pillager;
+import net.minecraft.world.entity.monster.AbstractIllager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -53,6 +54,9 @@ import java.util.List;
  * <p>The class has a public no-argument constructor and instance test
  * methods because the gametest registry instantiates the holder class
  * reflectively before invoking each test.
+ *
+ * <p>Pose partitions: protocol weapon / vanilla crossbow / non-weapon / empty;
+ * aggressive / idle. Only protocol weapons override the vanilla decision.
  */
 @GameTestHolder(ArmedPillagers.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -169,5 +173,26 @@ public final class ArmedPillagerGameTests {
                 helper.setBlock(new BlockPos(x, 0, z), Blocks.SMOOTH_STONE);
             }
         }
+    }
+
+    @GameTest(template = "arena")
+    public void protocolWeaponsAdvertiseTheCrossbowHold(GameTestHelper helper) {
+        Pillager pillager = helper.spawnWithNoFreeWill(EntityType.PILLAGER, PILLAGER);
+        for (boolean aggressive : new boolean[] {false, true}) {
+            pillager.setAggressive(aggressive);
+            pillager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.STICK));
+            helper.assertTrue(pillager.getArmPose() == AbstractIllager.IllagerArmPose.CROSSBOW_HOLD,
+                    "a protocol weapon advertises crossbow hold, aggressive=" + aggressive);
+            pillager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.CROSSBOW));
+            helper.assertTrue(pillager.getArmPose() == AbstractIllager.IllagerArmPose.CROSSBOW_HOLD,
+                    "vanilla crossbow remains vanilla");
+            for (ItemStack emptyOrTool : new ItemStack[] {ItemStack.EMPTY, new ItemStack(Items.DIAMOND)}) {
+                pillager.setItemSlot(EquipmentSlot.MAINHAND, emptyOrTool);
+                helper.assertTrue(pillager.getArmPose() == (aggressive
+                                ? AbstractIllager.IllagerArmPose.ATTACKING : AbstractIllager.IllagerArmPose.NEUTRAL),
+                        "non-weapons retain the vanilla pose");
+            }
+        }
+        helper.succeed();
     }
 }

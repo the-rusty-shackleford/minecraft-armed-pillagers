@@ -1,6 +1,7 @@
 {
   "values": {
     "anothergunmod:revolver": {
+      "grip": "one_handed",
       "neoforge:conditions": [
         {
           "type": "neoforge:mod_loaded",
@@ -24,6 +25,7 @@
       "far_shot_sound": "anothergunmod:far_shot"
     },
     "anothergunmod:rifle": {
+      "grip": "two_handed",
       "neoforge:conditions": [
         {
           "type": "neoforge:mod_loaded",
@@ -47,6 +49,7 @@
       "far_shot_sound": "anothergunmod:far_shot"
     },
     "anothergunmod:shotgun": {
+      "grip": "two_handed",
       "neoforge:conditions": [
         {
           "type": "neoforge:mod_loaded",

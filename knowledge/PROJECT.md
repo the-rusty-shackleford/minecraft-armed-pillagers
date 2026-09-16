@@ -43,7 +43,10 @@ Mod is supported through an optional bridge subproject
 
 ## How it is verified
 
-`./gradlew check`: 175 plain-JUnit tests against `domain`, and three gametests
+1.3.0 is local and unreleased (2026-09-16): protocol gun hold for animation packs
+and shared grip metadata for the shipped AGM profiles (D-0005). No release go.
+
+`./gradlew check`: 168 plain-JUnit tests against `domain`, and four gametests
 on a headless server that pass with no gun mod present. `devtools/run-test.sh`
 is the diagnostic harness through the bridge; its timeline (78-tick revolver
 reloads, six rounds, ten `APTEST_*` markers) is what a behaviour change is

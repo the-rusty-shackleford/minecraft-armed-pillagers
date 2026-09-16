@@ -2,6 +2,9 @@ modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
 
+[[mixins]]
+config="armedpillagers.mixins.json"
+
 [[mods]]
 modId="${mod_id}"
 version="${mod_version}"
@@ -56,6 +59,6 @@ Every rate and chance lives in config/armedpillagers-common.toml.
 [[dependencies.${mod_id}]]
     modId="rangedweapons"
     type="required"
-    versionRange="[1.0,2.0)"
+    versionRange="[1.7,2.0)"
     ordering="AFTER"
     side="BOTH"

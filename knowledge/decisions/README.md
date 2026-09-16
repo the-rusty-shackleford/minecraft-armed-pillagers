@@ -20,3 +20,4 @@ thought and someone later would want to know *why*.
 | D-0002 | Profiles and loadouts ship in this jar, guarded; the bridge is code only |
 | D-0003 | The gametests are a mod of their own |
 | D-0004 | Ranged Weapons Mod's guns ship as loadouts in this jar, weighted by how much they hurt |
+| D-0005 | A protocol gun advertises the vanilla crossbow hold to animation packs |

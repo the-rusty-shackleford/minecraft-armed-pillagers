@@ -143,8 +143,8 @@ dependencies {
     // lower version than it prefers if another mod caps the range.
     jarJar(implementation("com.nfx.rangedweapons:rangedweapons")) {
         version {
-            strictly "[1.0,2.0)"
-            prefer "1.4.1"
+            strictly "[1.7,2.0)"
+            prefer "1.7.0"
         }
     }
 

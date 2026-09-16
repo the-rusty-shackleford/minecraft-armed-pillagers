@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "com.nfx.armedpillagers.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["PillagerMixin"],
+  "injectors": {"defaultRequire": 1}
+}
