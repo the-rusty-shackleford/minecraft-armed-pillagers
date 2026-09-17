@@ -62,3 +62,15 @@ measured against.
 
 AGPL-3.0-or-later; see the protocol's `knowledge/decisions/D-0003.md` for why
 the interface carries it too.
+
+
+## Release approval - 2026-09-16
+
+Rusty approved the final review, completing their earlier conditional release go.
+Version 1.3.0 is cleared for publication in pack 1.35.0 after the clean
+release build and asset verification. This supersedes the earlier release holds
+and pending presentation/listening review recorded above.
+
+The AGM bridge now prefers the same bundled protocol 1.7.0 as the main mod,
+so both release artifacts carry the current library. Its compatible version range
+remains unchanged. The release build exercises the real bridge with AGM installed.
